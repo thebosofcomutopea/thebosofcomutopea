@@ -228,22 +228,32 @@
         for (let i = 0; i < 20; i++) {
             world[i] = [];
             for (let j = 0; j < 20; j++) {
-                world[i][j] = 'grass';
+                const distance = Math.abs(i - 10) + Math.abs(j - 10);
+                if (distance < 6) {
+                    world[i][j] = 'grass';
+                } else if (distance < 10) {
+                    world[i][j] = 'dirt';
+                } else {
+                    world[i][j] = 'grass';
+                }
             }
         }
 
-        // Haunted house (unbreakable)
+        // Haunted forest and house
         for (let i = 7; i < 13; i++) {
             for (let j = 7; j < 13; j++) {
                 world[i][j] = 'planks';
             }
         }
 
-        // Trees
+        // Natural foliage
         world[3][3] = 'log';
         world[3][4] = 'leaves';
         world[16][2] = 'log';
         world[16][3] = 'leaves';
+        world[8][5] = 'leaves';
+        world[12][6] = 'log';
+        world[15][10] = 'leaves';
 
         let isNight = false;
         let sanity = 100;
@@ -317,148 +327,153 @@
         }
 
         function drawBlock(screenX, screenY, type, distance) {
-            // First-person block rendering with depth
-            let color, topColor, sideColor;
-            const blockSize = 50 - distance * 5; // Blocks get smaller with distance
-            
+            // Smooth natural block representation using shapes and shading
+            let color;
             switch (type) {
-                case 'grass':
-                    color = '#4CAF50';
-                    topColor = '#7CB342';
-                    sideColor = '#558B2F';
-                    break;
-                case 'planks':
-                    color = '#8B4513';
-                    topColor = '#A0522D';
-                    sideColor = '#654321';
-                    break;
-                case 'log':
-                    color = '#654321';
-                    topColor = '#8B4513';
-                    sideColor = '#4A2511';
-                    break;
-                case 'leaves':
-                    color = '#228B22';
-                    topColor = '#32CD32';
-                    sideColor = '#1a5c1a';
-                    break;
-                default:
-                    color = '#4CAF50';
-                    topColor = '#7CB342';
-                    sideColor = '#558B2F';
+                case 'grass': color = '#3A5F0B'; break;
+                case 'planks': color = '#6C4A2A'; break;
+                case 'log': color = '#5A3C25'; break;
+                case 'leaves': color = '#2C5F2D'; break;
+                case 'stone': color = '#5A5A5A'; break;
+                default: color = '#3A5F0B';
             }
 
-            if (blockSize < 2) return;
+            const size = 120 - distance * 14;
+            const base = 24 - distance * 3;
+            const height = size * 0.45;
 
-            const half = blockSize / 2;
+            const x = screenX;
+            const y = screenY + distance * 5;
 
-            // Front face
+            // Terrain base
             ctx.fillStyle = color;
-            ctx.fillRect(screenX - half, screenY - half, blockSize, blockSize);
-            
-            // Top face
-            ctx.fillStyle = topColor;
             ctx.beginPath();
-            ctx.moveTo(screenX - half, screenY - half);
-            ctx.lineTo(screenX - half + 8, screenY - half - 6);
-            ctx.lineTo(screenX + half + 8, screenY - half - 6);
-            ctx.lineTo(screenX + half, screenY - half);
-            ctx.fill();
-            
-            // Right face
-            ctx.fillStyle = sideColor;
-            ctx.beginPath();
-            ctx.moveTo(screenX + half, screenY - half);
-            ctx.lineTo(screenX + half + 8, screenY - half - 6);
-            ctx.lineTo(screenX + half + 8, screenY + half - 6);
-            ctx.lineTo(screenX + half, screenY + half);
+            ctx.ellipse(x, y + height / 2, size / 2, height / 2, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Outline
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(screenX - half, screenY - half, blockSize, blockSize);
+            // Light shading layer
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            ctx.beginPath();
+            ctx.ellipse(x - size * 0.18, y + height / 2 - 8, size / 2.2, height / 2.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dark shading layer
+            ctx.fillStyle = 'rgba(0,0,0,0.12)';
+            ctx.beginPath();
+            ctx.ellipse(x + size * 0.2, y + height / 2 + 8, size / 2.4, height / 2.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (type === 'leaves') {
+                ctx.fillStyle = '#30612E';
+                ctx.beginPath();
+                ctx.arc(x, y + height * 0.1, size * 0.17, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (type === 'log') {
+                ctx.strokeStyle = '#3F2A1B';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(x - size * 0.2, y + height * 0.05);
+                ctx.lineTo(x + size * 0.2, y + height * 0.25);
+                ctx.stroke();
+            }
         }
 
         function draw() {
-            // Sky
-            const skyTop = isNight ? '#000033' : '#87CEEB';
-            const skyBottom = isNight ? '#000011' : '#87CEEB';
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height / 2);
-            gradient.addColorStop(0, skyTop);
-            gradient.addColorStop(1, skyBottom);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
-            
-            // Ground
-            ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+            // Sky gradient
+            const skyTop = isNight ? '#060A1A' : '#5C8BD4';
+            const skyBottom = isNight ? '#0C1227' : '#A6D8FF';
+            const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
+            sky.addColorStop(0, skyTop);
+            sky.addColorStop(1, skyBottom);
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
 
-            // Render blocks in first-person view (closer blocks in back, farther in front for depth)
-            for (let distance = 5; distance >= 1; distance--) {
-                // Draw blocks at this distance layer
-                for (let offset = -3; offset <= 3; offset++) {
-                    const relX = offset;
-                    const relY = distance;
-                    
-                    const blockX = player.gridX + relX;
-                    const blockY = player.gridY + relY;
-                    
-                    if (blockX >= 0 && blockX < 20 && blockY >= 0 && blockY < 20) {
-                        const type = world[blockX][blockY];
-                        
-                        // Calculate screen position
-                        const screenX = canvas.width / 2 + offset * (50 - distance * 5);
-                        const screenY = canvas.height / 2 - 10;
-                        
-                        drawBlock(screenX, screenY, type, distance);
-                    }
+            // Fog and distance haze
+            ctx.fillStyle = isNight ? 'rgba(0,0,30,0.35)' : 'rgba(180,220,255,0.18)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground plane
+            const ground = ctx.createLinearGradient(0, canvas.height * 0.35, 0, canvas.height);
+            ground.addColorStop(0, '#2A3E13');
+            ground.addColorStop(1, '#091403');
+            ctx.fillStyle = ground;
+            ctx.fillRect(0, canvas.height * 0.35, canvas.width, canvas.height * 0.65);
+
+            // Draw trees and foliage layers
+            for (let depth = 6; depth >= 1; depth--) {
+                const row = player.gridY + depth;
+                const xOffset = (canvas.width / 2) + (depth - 3) * 45;
+                const yOffset = canvas.height * 0.45 + depth * 12;
+                const type = world[player.gridX][row] || 'grass';
+                drawBlock(xOffset, yOffset, type, depth);
+
+                for (let side = -1; side <= 1; side += 2) {
+                    const sideType = world[player.gridX + side] ? world[player.gridX + side][row] : 'grass';
+                    drawBlock(xOffset + side * 80, yOffset - 10, sideType, depth + 0.5);
                 }
             }
 
-            // Behind player view
-            for (let offset = -3; offset <= 3; offset++) {
-                const blockX = player.gridX + offset;
-                const blockY = player.gridY - 1;
-                
-                if (blockX >= 0 && blockX < 20 && blockY >= 0 && blockY < 20) {
-                    const type = world[blockX][blockY];
-                    const screenX = canvas.width / 2 + offset * 30;
-                    const screenY = canvas.height / 2 + 100;
-                    
-                    // Draw smaller in background
-                    ctx.fillStyle = '#333';
-                    ctx.fillRect(screenX - 15, screenY - 15, 30, 30);
-                    ctx.strokeStyle = '#111';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(screenX - 15, screenY - 15, 30, 30);
-                }
+            // Add distant trees and detail
+            for (let i = 1; i <= 4; i++) {
+                const x = canvas.width * 0.18 + i * 140;
+                const y = canvas.height * 0.55 - i * 8;
+                ctx.fillStyle = '#1E2D10';
+                ctx.beginPath();
+                ctx.ellipse(x, y, 32, 60, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(x + 16, y - 20, 50, 40, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#29431F';
+                ctx.fill();
             }
+
+            // Add house silhouette
+            ctx.fillStyle = 'rgba(40, 20, 10, 0.9)';
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.65, canvas.height * 0.5);
+            ctx.lineTo(canvas.width * 0.6, canvas.height * 0.65);
+            ctx.lineTo(canvas.width * 0.72, canvas.height * 0.65);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = 'rgba(80, 50, 30, 0.95)';
+            ctx.fillRect(canvas.width * 0.62, canvas.height * 0.55, canvas.width * 0.1, canvas.height * 0.08);
+
+            // Character weapon/hand foreground
+            ctx.fillStyle = '#3E2B1B';
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.5 - 18, canvas.height * 0.8);
+            ctx.lineTo(canvas.width * 0.5 + 48, canvas.height * 0.8);
+            ctx.lineTo(canvas.width * 0.5 + 12, canvas.height * 0.92);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#A08876';
+            ctx.fillRect(canvas.width * 0.47, canvas.height * 0.78, 12, 36);
 
             // Night darkness overlay
             if (isNight) {
-                const darkness = 0.7 + (100 - sanity) / 200;
-                ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
+                const darkness = 0.55 + (100 - sanity) / 240;
+                ctx.fillStyle = `rgba(0, 0, 20, ${darkness})`;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 if (sanity < 50) {
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    ctx.fillStyle = 'rgba(150, 0, 0, 0.18)';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = '#FF0000';
+                    ctx.fillStyle = '#FF6666';
                     ctx.font = 'bold 30px monospace';
                     ctx.fillText('SANITY LOW!', canvas.width / 2 - 120, 50);
                 }
 
                 if (sanity < 20) {
-                    ctx.fillStyle = '#333';
-                    ctx.font = 'bold 50px monospace';
-                    ctx.fillText('IT\'S COMING...', canvas.width / 2 - 200, canvas.height / 2);
+                    ctx.fillStyle = '#EEE';
+                    ctx.font = 'bold 48px monospace';
+                    ctx.fillText('THE STALKER IS NEAR', canvas.width / 2 - 220, canvas.height / 2);
                 }
             }
 
-            // Crosshair
-            ctx.strokeStyle = 'white';
+            // HUD crosshair
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2 - 15, canvas.height / 2);
