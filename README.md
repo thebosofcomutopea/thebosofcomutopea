@@ -1,5 +1,19 @@
 ## Hi there 👋
 
+# 🎮 Eglercraft Horror Server
+
+**The game files are in the `game/` folder!** Navigate there and run:
+
+```bash
+cd game
+npm run setup
+npm run start
+```
+
+See [game/README.md](game/README.md) for full documentation.
+
+---
+
 <!--
 **thebosofcomutopea/thebosofcomutopea** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 

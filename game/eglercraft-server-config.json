@@ -1,0 +1,52 @@
+{
+  "port": 25565,
+  "world": "./horror-map",
+  "spawn": {
+    "x": 0,
+    "y": 1,
+    "z": 0
+  },
+  "fog": true,
+  "fogDensity": 0.85,
+  "darkness": 0.2,
+  "plugins": [
+    "../plugins/horror-events.js",
+    "../plugins/staker-entity.js",
+    "../plugins/land-claiming.js",
+    "../plugins/gun-mod.js",
+    "../plugins/create-mod.js",
+    "../plugins/biomes-o-plenty.js",
+    "../plugins/mine-colonies.js",
+    "../plugins/sanity-system.js",
+    "../plugins/horror-entities.js",
+    "../plugins/admin-commands.js",
+    "../plugins/night-vision.js",
+    "../plugins/the-midnight.js",
+    "../plugins/lycanites-mobs.js",
+    "../plugins/infernal-mobs.js",
+    "../plugins/rough-mobs.js",
+    "../plugins/special-mobs.js",
+    "../plugins/doom-mod.js",
+    "../plugins/death-angels.js",
+    "../plugins/custom-music.js"
+  ],
+  "map": "./horror-map/map.json",
+  "soundscape": {
+    "ambient": [
+      "jupiter-aurora",
+      "stern-radio-waves",
+      "black-hole-ambience"
+    ],
+    "chase": "staker-hunt-loop"
+  },
+  "disabledItems": ["tnt"],
+  "protection": {
+    "hauntedHouse": {
+      "bounds": {
+        "min": { "x": -10, "y": -5, "z": -10 },
+        "max": { "x": 10, "y": 10, "z": 20 }
+      },
+      "unbreakable": true
+    }
+  }
+}

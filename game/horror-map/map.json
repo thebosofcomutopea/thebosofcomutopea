@@ -1,0 +1,85 @@
+{
+  "name": "Haunted House Escape Room",
+  "description": "An unbreakable haunted mansion enclosing the spawn point, with narrow corridors, low light, dense fog, and a stalking entity.",
+  "spawn": "foyer",
+  "unbreakable": true,
+  "enclosed": true,
+  "rooms": {
+    "foyer": {
+      "coords": { "x": 0, "y": 1, "z": 0 },
+      "description": "A flickering lantern-lit foyer with the main door sealed by spectral energy. The walls are unbreakable.",
+      "exits": ["northHall", "cellarEntrance"],
+      "features": ["lowLight", "lockedDoor", "unbreakable"]
+    },
+    "northHall": {
+      "coords": { "x": 0, "y": 1, "z": 6 },
+      "description": "A narrow hallway lined with warped portraits and distant whispers. Walls cannot be broken.",
+      "exits": ["foyer", "atticStairs"],
+      "features": ["fog", "echo", "unbreakable"]
+    },
+    "atticStairs": {
+      "coords": { "x": 0, "y": 1, "z": 12 },
+      "description": "Stairs to the attic that creak under unseen weight. The structure is protected.",
+      "exits": ["attic"],
+      "trigger": "jumpScare",
+      "features": ["unbreakable"]
+    },
+    "attic": {
+      "coords": { "x": -4, "y": 4, "z": 14 },
+      "description": "A cramped attic full of broken toys and the first sign of the Staker. All blocks are unbreakable.",
+      "exits": ["atticStairs"],
+      "features": ["narrow", "particleFog", "unbreakable"]
+    },
+    "cellarEntrance": {
+      "coords": { "x": 4, "y": 0, "z": 0 },
+      "description": "A low stone entry into the cellar. Cold air presses against your skin. The entrance is sealed.",
+      "exits": ["cellar"],
+      "trigger": "radioCrackle",
+      "features": ["unbreakable"]
+    },
+    "cellar": {
+      "coords": { "x": 4, "y": -3, "z": -6 },
+      "description": "The cellar is pitch dark with strange hums reverberating off the stone. Everything is unbreakable.",
+      "exits": ["cellarEntrance"],
+      "features": ["blackHolePulse", "shadowSounds", "unbreakable"]
+    }
+  },
+  "corridors": [
+    {
+      "from": "foyer",
+      "to": "northHall",
+      "length": 6,
+      "width": 1,
+      "lighting": "dim",
+      "unbreakable": true
+    }
+  ],
+  "entities": [
+    {
+      "type": "Staker",
+      "description": "A stalking entity like The Bath Boy, Playmate, and Sisofrania combined.",
+      "spawnRoom": "attic",
+      "chaseTrigger": "cellar",
+      "sound": "staker-hunt-loop"
+    }
+  ],
+  "ambient": {
+    "fogDensity": 0.85,
+    "lightLevel": 8,
+    "soundscape": [
+      "jupiter-aurora",
+      "stern-radio-waves",
+      "black-hole-ambience"
+    ]
+  },
+  "protection": {
+    "hauntedHouse": {
+      "bounds": {
+        "min": { "x": -10, "y": -5, "z": -10 },
+        "max": { "x": 10, "y": 10, "z": 20 }
+      },
+      "unbreakable": true,
+      "noTNT": true
+    }
+  }
+}

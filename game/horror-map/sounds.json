@@ -1,0 +1,24 @@
+{
+  "ambient": [
+    {
+      "id": "jupiter-aurora",
+      "label": "Jupiter Aurora",
+      "description": "Layered synth textures with drifting planetary tones."
+    },
+    {
+      "id": "stern-radio-waves",
+      "label": "Stern Radio Waves",
+      "description": "Crackling distant signal noise layered under the atmosphere."
+    },
+    {
+      "id": "black-hole-ambience",
+      "label": "Black Hole Ambience",
+      "description": "Low-frequency rumble and modulated sub-bass for a haunted chase feel."
+    }
+  ],
+  "chase": {
+    "id": "staker-hunt-loop",
+    "label": "Staker Hunt Loop",
+    "description": "Intensity rises when the Staker is nearby, mixing dark atmospheres with urgent tension."
+  }
+}

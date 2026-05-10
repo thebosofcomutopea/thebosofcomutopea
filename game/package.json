@@ -1,0 +1,13 @@
+{
+  "name": "eglercraft-horror-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup": "sh ./setup.sh",
+    "start": "node ./scripts/run-server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {}
+}

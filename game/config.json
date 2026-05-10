@@ -1,0 +1,21 @@
+{
+  "serverPort": 25565,
+  "worldPath": "./horror-map",
+  "serverConfigPath": "./eglercraft-server-config.json",
+  "darkness": true,
+  "fog": true,
+  "fogDensity": 0.8,
+  "spawnPoint": {
+    "x": 0,
+    "y": 1,
+    "z": 0
+  },
+  "audio": {
+    "ambient": [
+      "jupiter-aurora",
+      "stern-radio-waves",
+      "black-hole-ambience"
+    ],
+    "chase": "staker-hunt-loop"
+  }
+}
