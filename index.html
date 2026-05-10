@@ -15,7 +15,7 @@
     <canvas id="gameCanvas"></canvas>
     <div id="ui">
         <p>Eglercraft Horror Server</p>
-        <p>Controls: WASD to move</p>
+        <p>Controls: WASD to move | Q/E or Arrows to look</p>
         <p>Sanity: <span id="sanity">100</span>%</p>
         <p>Time: <span id="time">Day</span></p>
         <button id="creditsBtn" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">Credits</button>
@@ -68,7 +68,7 @@
         canvas.height = window.innerHeight;
 
         const blockSize = 32;
-        let player = { gridX: 10, gridY: 10 };
+        let player = { gridX: 10, gridY: 10, yaw: 0 }; // yaw = rotation/direction
         let keys = {};
         let moveCooldown = 0;
 
@@ -103,12 +103,35 @@
             const timeOfDay = (gameTime / 100) % 24;
             isNight = timeOfDay > 12 && timeOfDay < 24;
 
-            // Movement
+            // Movement with direction
             if (moveCooldown <= 0) {
-                if (keys['w'] && player.gridY > 0) { player.gridY--; moveCooldown = 5; }
-                if (keys['s'] && player.gridY < 19) { player.gridY++; moveCooldown = 5; }
-                if (keys['a'] && player.gridX > 0) { player.gridX--; moveCooldown = 5; }
-                if (keys['d'] && player.gridX < 19) { player.gridX++; moveCooldown = 5; }
+                // Rotation
+                if (keys['arrowleft'] || keys['q']) { player.yaw -= 0.1; moveCooldown = 3; }
+                if (keys['arrowright'] || keys['e']) { player.yaw += 0.1; moveCooldown = 3; }
+                
+                // Forward/backward movement
+                if (keys['w']) { 
+                    player.gridY--;
+                    moveCooldown = 5;
+                }
+                if (keys['s']) { 
+                    player.gridY++;
+                    moveCooldown = 5;
+                }
+                
+                // Strafe
+                if (keys['a']) { 
+                    player.gridX--;
+                    moveCooldown = 5;
+                }
+                if (keys['d']) { 
+                    player.gridX++;
+                    moveCooldown = 5;
+                }
+                
+                // Boundary check
+                player.gridX = Math.max(0, Math.min(19, player.gridX));
+                player.gridY = Math.max(0, Math.min(19, player.gridY));
             } else {
                 moveCooldown--;
             }
@@ -127,16 +150,16 @@
             requestAnimationFrame(update);
         }
 
-        function drawBlock(screenX, screenY, type) {
-            // 3D isometric block drawing
-            const size = blockSize;
+        function drawBlock(screenX, screenY, type, distance) {
+            // First-person block rendering with depth
             let color, topColor, sideColor;
+            const blockSize = 50 - distance * 5; // Blocks get smaller with distance
             
             switch (type) {
                 case 'grass':
                     color = '#4CAF50';
                     topColor = '#7CB342';
-                    sideColor = '#2E7D32';
+                    sideColor = '#558B2F';
                     break;
                 case 'planks':
                     color = '#8B4513';
@@ -156,84 +179,115 @@
                 default:
                     color = '#4CAF50';
                     topColor = '#7CB342';
-                    sideColor = '#2E7D32';
+                    sideColor = '#558B2F';
             }
 
-            const halfSize = size / 2;
+            if (blockSize < 2) return;
+
+            const half = blockSize / 2;
 
             // Front face
             ctx.fillStyle = color;
-            ctx.fillRect(screenX, screenY, size, size);
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(screenX, screenY, size, size);
-
-            // Top face (isometric)
+            ctx.fillRect(screenX - half, screenY - half, blockSize, blockSize);
+            
+            // Top face
             ctx.fillStyle = topColor;
             ctx.beginPath();
-            ctx.moveTo(screenX, screenY);
-            ctx.lineTo(screenX + halfSize, screenY - halfSize * 0.5);
-            ctx.lineTo(screenX + size + halfSize, screenY - halfSize * 0.5);
-            ctx.lineTo(screenX + size, screenY);
+            ctx.moveTo(screenX - half, screenY - half);
+            ctx.lineTo(screenX - half + 8, screenY - half - 6);
+            ctx.lineTo(screenX + half + 8, screenY - half - 6);
+            ctx.lineTo(screenX + half, screenY - half);
             ctx.fill();
-            ctx.stroke();
-
-            // Right face (isometric)
+            
+            // Right face
             ctx.fillStyle = sideColor;
             ctx.beginPath();
-            ctx.moveTo(screenX + size, screenY);
-            ctx.lineTo(screenX + size + halfSize, screenY - halfSize * 0.5);
-            ctx.lineTo(screenX + size + halfSize, screenY + size - halfSize * 0.5);
-            ctx.lineTo(screenX + size, screenY + size);
+            ctx.moveTo(screenX + half, screenY - half);
+            ctx.lineTo(screenX + half + 8, screenY - half - 6);
+            ctx.lineTo(screenX + half + 8, screenY + half - 6);
+            ctx.lineTo(screenX + half, screenY + half);
             ctx.fill();
-            ctx.stroke();
+
+            // Outline
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(screenX - half, screenY - half, blockSize, blockSize);
         }
 
         function draw() {
             // Sky
-            ctx.fillStyle = isNight ? '#000033' : '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const skyTop = isNight ? '#000033' : '#87CEEB';
+            const skyBottom = isNight ? '#000011' : '#87CEEB';
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height / 2);
+            gradient.addColorStop(0, skyTop);
+            gradient.addColorStop(1, skyBottom);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+            
+            // Ground
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
 
-            // Render world around player
-            const viewDistance = 12;
-            const startX = Math.max(0, player.gridX - viewDistance);
-            const endX = Math.min(20, player.gridX + viewDistance);
-            const startY = Math.max(0, player.gridY - viewDistance);
-            const endY = Math.min(20, player.gridY + viewDistance);
-
-            for (let i = startX; i < endX; i++) {
-                for (let j = startY; j < endY; j++) {
-                    const screenX = i * blockSize - player.gridX * blockSize + canvas.width / 2;
-                    const screenY = j * blockSize - player.gridY * blockSize + canvas.height / 2;
-                    drawBlock(screenX, screenY, world[i][j]);
+            // Render blocks in first-person view (closer blocks in back, farther in front for depth)
+            for (let distance = 5; distance >= 1; distance--) {
+                // Draw blocks at this distance layer
+                for (let offset = -3; offset <= 3; offset++) {
+                    const relX = offset;
+                    const relY = distance;
+                    
+                    const blockX = player.gridX + relX;
+                    const blockY = player.gridY + relY;
+                    
+                    if (blockX >= 0 && blockX < 20 && blockY >= 0 && blockY < 20) {
+                        const type = world[blockX][blockY];
+                        
+                        // Calculate screen position
+                        const screenX = canvas.width / 2 + offset * (50 - distance * 5);
+                        const screenY = canvas.height / 2 - 10;
+                        
+                        drawBlock(screenX, screenY, type, distance);
+                    }
                 }
             }
 
-            // Player (red block in center)
-            ctx.fillStyle = '#FF5722';
-            ctx.fillRect(canvas.width / 2 - blockSize/2, canvas.height / 2 - blockSize/2, blockSize, blockSize);
-            ctx.fillStyle = '#FFC107';
-            ctx.fillRect(canvas.width / 2 - blockSize/2, canvas.height / 2 - blockSize - 4, blockSize, blockSize);
+            // Behind player view
+            for (let offset = -3; offset <= 3; offset++) {
+                const blockX = player.gridX + offset;
+                const blockY = player.gridY - 1;
+                
+                if (blockX >= 0 && blockX < 20 && blockY >= 0 && blockY < 20) {
+                    const type = world[blockX][blockY];
+                    const screenX = canvas.width / 2 + offset * 30;
+                    const screenY = canvas.height / 2 + 100;
+                    
+                    // Draw smaller in background
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(screenX - 15, screenY - 15, 30, 30);
+                    ctx.strokeStyle = '#111';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(screenX - 15, screenY - 15, 30, 30);
+                }
+            }
 
-            // Night darkness
+            // Night darkness overlay
             if (isNight) {
                 const darkness = 0.7 + (100 - sanity) / 200;
                 ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 if (sanity < 50) {
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = '#FF0000';
                     ctx.font = 'bold 30px monospace';
-                    ctx.fillText('SANITY LOW!', canvas.width / 2 - 100, 50);
+                    ctx.fillText('SANITY LOW!', canvas.width / 2 - 120, 50);
                 }
 
                 if (sanity < 20) {
-                    // Staker appearing
                     ctx.fillStyle = '#333';
-                    ctx.font = 'bold 40px monospace';
-                    ctx.fillText('IT\'S COMING...', 50, canvas.height / 2);
+                    ctx.font = 'bold 50px monospace';
+                    ctx.fillText('IT\'S COMING...', canvas.width / 2 - 200, canvas.height / 2);
                 }
             }
 
@@ -241,10 +295,10 @@
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2 - 10, canvas.height / 2);
-            ctx.lineTo(canvas.width / 2 + 10, canvas.height / 2);
-            ctx.moveTo(canvas.width / 2, canvas.height / 2 - 10);
-            ctx.lineTo(canvas.width / 2, canvas.height / 2 + 10);
+            ctx.moveTo(canvas.width / 2 - 15, canvas.height / 2);
+            ctx.lineTo(canvas.width / 2 + 15, canvas.height / 2);
+            ctx.moveTo(canvas.width / 2, canvas.height / 2 - 15);
+            ctx.lineTo(canvas.width / 2, canvas.height / 2 + 15);
             ctx.stroke();
         }
 
