@@ -30,9 +30,10 @@
   <div id="ui">
     <p><strong>Eglercraft Horror Forest</strong></p>
     <p>Click canvas to lock mouse, then use <strong>WASD</strong> to move and look around.</p>
-    <p><strong>I</strong> = Inventory, <strong>C</strong> = Crafting</p>
+    <p><strong>I</strong> = Inventory, <strong>C</strong> = Crafting, <strong>M</strong> = Credits</p>
     <p><strong>Q/E</strong> = Lean left/right</p>
     <p id="status"></p>
+    <button id="creditsBtn" class="button" style="margin-top:8px; width:100%;">Credits</button>
   </div>
   <div id="hotbar"></div>
   <div id="overlay"></div>
@@ -49,6 +50,7 @@
     const overlay = document.getElementById('overlay');
     const menu = document.getElementById('menu');
     const menuPanel = document.getElementById('menuPanel');
+    const creditsBtn = document.getElementById('creditsBtn');
 
     function resize() {
       canvas.width = window.innerWidth;
@@ -132,18 +134,21 @@
 
     function startAmbient() {
       if (state.soundtrackStarted) return;
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
       state.soundtrackStarted = true;
       ambientOsc = audioContext.createOscillator();
       const gain = audioContext.createGain();
-      ambientOsc.frequency.value = 60;
+      ambientOsc.frequency.value = 55;
       ambientOsc.type = 'sine';
-      gain.gain.value = 0.003;
+      gain.gain.value = 0.02;
       ambientOsc.connect(gain).connect(audioContext.destination);
       ambientOsc.start();
 
       chaseOsc = audioContext.createOscillator();
       const chaseGain = audioContext.createGain();
-      chaseOsc.frequency.value = 90;
+      chaseOsc.frequency.value = 120;
       chaseOsc.type = 'triangle';
       chaseGain.gain.value = 0;
       chaseOsc.connect(chaseGain).connect(audioContext.destination);
@@ -187,11 +192,11 @@
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
 
-      const ground = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
-      ground.addColorStop(0, '#1d3317');
-      ground.addColorStop(1, '#070b05');
+      const ground = ctx.createLinearGradient(0, canvas.height * 0.35, 0, canvas.height);
+      ground.addColorStop(0, '#2a4a1b');
+      ground.addColorStop(1, '#14320a');
       ctx.fillStyle = ground;
-      ctx.fillRect(0, canvas.height * 0.4, canvas.width, canvas.height * 0.6);
+      ctx.fillRect(0, canvas.height * 0.35, canvas.width, canvas.height * 0.65);
 
       const dir = { x: Math.sin(player.yaw), y: Math.cos(player.yaw) };
       const plane = { x: -dir.y * 0.7, y: dir.x * 0.7 };
@@ -445,10 +450,22 @@
       menuPanel.appendChild(closeButton);
     }
 
+    function openCredits() {
+      menu.style.display = 'flex';
+      menuPanel.innerHTML = '<h2>Credits</h2>' +
+        '<p>Eglercraft Horror Forest</p>' +
+        '<p>Styled with a Russian anthem horror influence.</p>' +
+        '<p>Features: haunted house, Staker chase, sanity system, crafting, and ambient horror.</p>' +
+        '<p>Controls: WASD, mouse look, Q/E lean, I inventory, C crafting, M credits.</p>' +
+        '<button class="button" id="closeCredits">Close</button>';
+      document.getElementById('closeCredits').onclick = () => { menu.style.display = 'none'; };
+    }
+
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (e.key.toLowerCase() === 'i') openMenu('inventory');
       if (e.key.toLowerCase() === 'c') openMenu('crafting');
+      if (e.key.toLowerCase() === 'm') openCredits();
       if (e.key.toLowerCase() === 'r' && player.dead) location.reload();
       if (e.key.toLowerCase() === 'p') player.torch = !player.torch;
     });
@@ -458,11 +475,14 @@
       if (document.pointerLockElement !== canvas) {
         canvas.requestPointerLock();
       }
+      audioContext.resume();
       startAmbient();
     });
     document.addEventListener('pointerlockchange', () => {
       canvas.style.cursor = document.pointerLockElement === canvas ? 'none' : 'default';
     });
+
+    creditsBtn.addEventListener('click', openCredits);
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement === canvas && !player.dead) {
         player.yaw += e.movementX * 0.0025;
