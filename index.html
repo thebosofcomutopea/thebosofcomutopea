@@ -9,13 +9,30 @@
         canvas { display: block; }
         #ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; background: rgba(0,0,0,0.7); padding: 10px; }
         #ui p { margin: 5px 0; }
+        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #444; }
+        .hotbar-slot { width: 40px; height: 40px; border: 2px solid #666; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; cursor: pointer; transition: all 0.1s; }
+        .hotbar-slot.selected { border-color: #fff; background: #555; }
+        .hotbar-slot:hover { border-color: #aaa; }
+        #inventoryScreen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; }
+        #craftingScreen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; }
+        .menu-panel { background: #1a1a1a; border: 3px solid #8B4513; padding: 20px; color: white; font-family: monospace; max-height: 90vh; overflow-y: auto; }
+        .inventory-grid { display: grid; grid-template-columns: repeat(9, 50px); gap: 5px; margin: 20px 0; }
+        .inventory-slot { width: 50px; height: 50px; border: 2px solid #666; background: #333; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #aaa; cursor: pointer; transition: all 0.1s; }
+        .inventory-slot:hover { border-color: #aaa; background: #444; }
+        .inventory-slot.filled { background: #555; color: white; }
+        .craft-recipe { background: #333; border: 1px solid #666; padding: 10px; margin: 5px 0; cursor: pointer; transition: all 0.1s; }
+        .craft-recipe:hover { background: #444; border-color: #aaa; }
+        .craft-recipe.craftable { border-color: #4CAF50; background: #1a3a1a; }
+        #closeMenuBtn { margin-top: 20px; padding: 10px 20px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace; }
+        #closeMenuBtn:hover { background: #A0522D; }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui">
         <p>Eglercraft Horror Server</p>
-        <p>Controls: WASD to move | Q/E or Arrows to look</p>
+        <p>Controls: WASD to move | Q/E to look</p>
+        <p>I = Inventory | C = Crafting</p>
         <p>Sanity: <span id="sanity">100</span>%</p>
         <p>Time: <span id="time">Day</span></p>
         <button id="creditsBtn" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">Credits</button>
@@ -60,6 +77,27 @@
         </div>
     </div>
 
+    <div id="inventoryScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center;">
+        <div class="menu-panel" style="width: 500px;">
+            <h1 style="text-align: center; margin-bottom: 20px;">Inventory</h1>
+            <p style="margin: 5px 0; color: #aaa;">Press I to close</p>
+            <div id="inventoryGrid" class="inventory-grid"></div>
+            <div id="inventoryInfo" style="margin-top: 20px; font-size: 12px; color: #aaa;"></div>
+            <button id="closeInventoryBtn" style="width: 100%; margin-top: 20px; padding: 10px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace;">Close (I)</button>
+        </div>
+    </div>
+
+    <div id="craftingScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center;">
+        <div class="menu-panel" style="width: 600px;">
+            <h1 style="text-align: center; margin-bottom: 20px;">Crafting Table</h1>
+            <p style="margin: 5px 0; color: #aaa;">Press C to close | Click to craft</p>
+            <div id="craftingRecipes" style="margin: 20px 0;"></div>
+            <button id="closeCraftingBtn" style="width: 100%; margin-top: 20px; padding: 10px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace;">Close (C)</button>
+        </div>
+    </div>
+
+    <div id="hotbar"></div>
+
     <script>
         // Minecraft-style Eglercraft horror client
         const canvas = document.getElementById('gameCanvas');
@@ -71,6 +109,119 @@
         let player = { gridX: 10, gridY: 10, yaw: 0 }; // yaw = rotation/direction
         let keys = {};
         let moveCooldown = 0;
+
+        // Inventory System
+        let inventory = {};
+        let selectedSlot = 0;
+        
+        const itemColors = {
+            'wood': '#CD853F',
+            'planks': '#8B4513',
+            'log': '#654321',
+            'stone': '#808080',
+            'dirt': '#8B7355',
+            'crafting_table': '#8B4513',
+            'pickaxe': '#696969',
+            'sword': '#C0C0C0',
+            'torch': '#FFD700'
+        };
+
+        const recipes = [
+            { name: 'Wooden Planks', requires: { wood: 1 }, produces: { planks: 4 } },
+            { name: 'Crafting Table', requires: { planks: 4 }, produces: { crafting_table: 1 } },
+            { name: 'Wooden Pickaxe', requires: { planks: 3, stick: 2 }, produces: { pickaxe: 1 } },
+            { name: 'Wooden Sword', requires: { planks: 2, stick: 1 }, produces: { sword: 1 } },
+            { name: 'Torches', requires: { coal: 1, stick: 1 }, produces: { torch: 4 } },
+            { name: 'Sticks', requires: { planks: 1 }, produces: { stick: 4 } },
+        ];
+
+        function addItem(item, amount = 1) {
+            if (!inventory[item]) inventory[item] = 0;
+            inventory[item] += amount;
+        }
+
+        function removeItem(item, amount = 1) {
+            if (inventory[item]) {
+                inventory[item] -= amount;
+                if (inventory[item] <= 0) delete inventory[item];
+            }
+        }
+
+        function canCraft(recipe) {
+            for (let item in recipe.requires) {
+                if (!inventory[item] || inventory[item] < recipe.requires[item]) return false;
+            }
+            return true;
+        }
+
+        function craft(recipe) {
+            if (!canCraft(recipe)) return false;
+            for (let item in recipe.requires) {
+                removeItem(item, recipe.requires[item]);
+            }
+            for (let item in recipe.produces) {
+                addItem(item, recipe.produces[item]);
+            }
+            return true;
+        }
+
+        function updateUI() {
+            const hotbarDiv = document.getElementById('hotbar');
+            hotbarDiv.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'hotbar-slot' + (i === selectedSlot ? ' selected' : '');
+                const itemKey = Object.keys(inventory)[i];
+                if (itemKey) {
+                    slot.innerHTML = `${itemKey}<br/>${inventory[itemKey]}`;
+                }
+                slot.onclick = () => selectedSlot = i;
+                hotbarDiv.appendChild(slot);
+            }
+
+            const gridDiv = document.getElementById('inventoryGrid');
+            gridDiv.innerHTML = '';
+            let slotIndex = 0;
+            for (let item in inventory) {
+                for (let i = 0; i < (inventory[item] || 0); i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot filled';
+                    slot.style.backgroundColor = itemColors[item] || '#555';
+                    slot.innerHTML = item;
+                    slot.title = `${item} x${inventory[item]}`;
+                    gridDiv.appendChild(slot);
+                    slotIndex++;
+                    if (slotIndex >= 27) break;
+                }
+                if (slotIndex >= 27) break;
+            }
+            while (slotIndex < 27) {
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                gridDiv.appendChild(slot);
+                slotIndex++;
+            }
+
+            const craftingDiv = document.getElementById('craftingRecipes');
+            craftingDiv.innerHTML = '';
+            recipes.forEach((recipe, index) => {
+                const div = document.createElement('div');
+                const canMake = canCraft(recipe);
+                div.className = 'craft-recipe' + (canMake ? ' craftable' : '');
+                let requires = Object.entries(recipe.requires).map(([item, count]) => `${item}x${count}`).join(' + ');
+                let produces = Object.entries(recipe.produces).map(([item, count]) => `${item}x${count}`).join(', ');
+                div.innerHTML = `${recipe.name}<br/><span style="font-size: 10px; color: #888;">${requires} → ${produces}</span>`;
+                div.style.cursor = canMake ? 'pointer' : 'default';
+                div.style.opacity = canMake ? '1' : '0.5';
+                if (canMake) div.onclick = () => craft(recipe);
+                craftingDiv.appendChild(div);
+            });
+        }
+
+        // Start with some items
+        addItem('wood', 3);
+        addItem('stone', 1);
+        updateUI();
 
         // World grid (20x20)
         let world = [];
@@ -141,6 +292,21 @@
                 sanity = Math.max(0, sanity - 0.2);
             } else {
                 sanity = Math.min(100, sanity + 0.1);
+            }
+
+            // Collect resources from nearby blocks
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    const x = player.gridX + dx;
+                    const y = player.gridY + dy;
+                    if (x >= 0 && x < 20 && y >= 0 && y < 20) {
+                        const blockType = world[x][y];
+                        if (blockType === 'log' && Math.random() > 0.98) addItem('wood', 1);
+                        if (blockType === 'leaves' && Math.random() > 0.95) addItem('apple', 1);
+                        if (blockType === 'grass' && Math.random() > 0.99) addItem('seed', 1);
+                        if (blockType === 'stone' && Math.random() > 0.97) addItem('stone', 1);
+                    }
+                }
             }
 
             draw();
@@ -302,13 +468,30 @@
             ctx.stroke();
         }
 
-        document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'i') {
+                const inventoryScreen = document.getElementById('inventoryScreen');
+                inventoryScreen.style.display = inventoryScreen.style.display === 'none' ? 'flex' : 'none';
+                updateUI();
+            }
+            if (e.key.toLowerCase() === 'c') {
+                const craftingScreen = document.getElementById('craftingScreen');
+                craftingScreen.style.display = craftingScreen.style.display === 'none' ? 'flex' : 'none';
+                updateUI();
+            }
+        });
         document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
         // Credits functionality
         const creditsBtn = document.getElementById('creditsBtn');
         const creditsScreen = document.getElementById('creditsScreen');
         const closeCreditsBtn = document.getElementById('closeCreditsBtn');
+        const closeInventoryBtn = document.getElementById('closeInventoryBtn');
+        const closeCraftingBtn = document.getElementById('closeCraftingBtn');
+        const inventoryScreen = document.getElementById('inventoryScreen');
+        const craftingScreen = document.getElementById('craftingScreen');
 
         creditsBtn.addEventListener('click', () => {
             creditsScreen.style.display = 'flex';
@@ -320,9 +503,29 @@
             creditsScreen.style.display = 'none';
         });
 
+        closeInventoryBtn.addEventListener('click', () => {
+            inventoryScreen.style.display = 'none';
+        });
+
+        closeCraftingBtn.addEventListener('click', () => {
+            craftingScreen.style.display = 'none';
+        });
+
         creditsScreen.addEventListener('click', (e) => {
             if (e.target === creditsScreen) {
                 creditsScreen.style.display = 'none';
+            }
+        });
+
+        inventoryScreen.addEventListener('click', (e) => {
+            if (e.target === inventoryScreen) {
+                inventoryScreen.style.display = 'none';
+            }
+        });
+
+        craftingScreen.addEventListener('click', (e) => {
+            if (e.target === craftingScreen) {
+                craftingScreen.style.display = 'none';
             }
         });
 
