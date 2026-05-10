@@ -1,575 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eglercraft Horror Server</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: monospace; }
-        canvas { display: block; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; background: rgba(0,0,0,0.7); padding: 10px; }
-        #ui p { margin: 5px 0; }
-        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #444; }
-        .hotbar-slot { width: 40px; height: 40px; border: 2px solid #666; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; cursor: pointer; transition: all 0.1s; }
-        .hotbar-slot.selected { border-color: #fff; background: #555; }
-        .hotbar-slot:hover { border-color: #aaa; }
-        #inventoryScreen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; }
-        #craftingScreen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; }
-        .menu-panel { background: #1a1a1a; border: 3px solid #8B4513; padding: 20px; color: white; font-family: monospace; max-height: 90vh; overflow-y: auto; }
-        .inventory-grid { display: grid; grid-template-columns: repeat(9, 50px); gap: 5px; margin: 20px 0; }
-        .inventory-slot { width: 50px; height: 50px; border: 2px solid #666; background: #333; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #aaa; cursor: pointer; transition: all 0.1s; }
-        .inventory-slot:hover { border-color: #aaa; background: #444; }
-        .inventory-slot.filled { background: #555; color: white; }
-        .craft-recipe { background: #333; border: 1px solid #666; padding: 10px; margin: 5px 0; cursor: pointer; transition: all 0.1s; }
-        .craft-recipe:hover { background: #444; border-color: #aaa; }
-        .craft-recipe.craftable { border-color: #4CAF50; background: #1a3a1a; }
-        #closeMenuBtn { margin-top: 20px; padding: 10px 20px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace; }
-        #closeMenuBtn:hover { background: #A0522D; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Eglercraft Horror Forest</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #ui { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.12); padding: 10px; width: 260px; }
+    #ui p { margin: 6px 0; font-size: 14px; }
+    #status { margin-top: 10px; font-size: 13px; line-height: 1.4; }
+    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+    .hotbar-slot { width: 45px; height: 45px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; color: #f0f0f0; }
+    .hotbar-slot.selected { border-color: #81d4fa; background: rgba(3, 169, 244, 0.2); }
+    #overlay { position: absolute; inset: 0; pointer-events: none; }
+    #menu { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); z-index: 10; }
+    .panel { background: #111; border: 2px solid #444; padding: 20px; width: min(700px, 90vw); color: #ddd; }
+    .panel h2 { margin-top: 0; }
+    .inventory-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .slot { background: #222; border: 1px solid #555; min-height: 60px; padding: 6px; font-size: 13px; }
+    .recipe { background: #171717; border: 1px solid #444; margin: 6px 0; padding: 10px; cursor: pointer; }
+    .recipe.craftable { border-color: #4caf50; }
+    .button { background: #263238; border: 1px solid #81d4fa; color: #fff; padding: 8px 14px; cursor: pointer; margin-top: 12px; }
+    .button:hover { background: #37474f; }
+  </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="ui">
-        <p>Eglercraft Horror Server</p>
-        <p>Controls: WASD to move | Click to look around</p>
-        <p>I = Inventory | C = Crafting</p>
-        <p>Sanity: <span id="sanity">100</span>%</p>
-        <p>Time: <span id="time">Day</span></p>
-        <button id="creditsBtn" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">Credits</button>
-    </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <p><strong>Eglercraft Horror Forest</strong></p>
+    <p>Click canvas to lock mouse, then use <strong>WASD</strong> to move and look around.</p>
+    <p><strong>I</strong> = Inventory, <strong>C</strong> = Crafting</p>
+    <p><strong>Q/E</strong> = Lean left/right</p>
+    <p id="status"></p>
+  </div>
+  <div id="hotbar"></div>
+  <div id="overlay"></div>
 
-    <div id="creditsScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #000033, #000066); color: white; font-family: monospace; overflow-y: auto; z-index: 1000;">
-        <div style="text-align: center; padding: 50px; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
-            <div>
-                <h1 style="font-size: 48px; margin-bottom: 50px; text-shadow: 0 0 20px #00ff00;">EGLERCRAFT HORROR SERVER</h1>
-                <div style="font-size: 24px; margin: 30px 0; text-shadow: 0 0 10px #00ff00;">
-                    <p style="margin: 20px 0;">Made with horrors in mind</p>
-                    <p style="margin: 20px 0;">━━━━━━━━━━━━━━━━━━━━━━━━━━━</p>
-                    <p style="margin: 40px 0; font-size: 28px; color: #ff6666;">⚠ THE STAKER ⚠</p>
-                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">A creature that stalks pillar builders<br/>Breaks blocks to reach you<br/>Plays haunting sounds as it hunts</p>
-                    <p style="margin: 40px 0; font-size: 28px; color: #ffaa00;">⚠ DEATH ANGELS ⚠</p>
-                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">Don't blink or look away<br/>They move only when unseen<br/>Fast and deadly</p>
-                    <p style="margin: 40px 0; font-size: 28px; color: #00ffff;">⚠ SANITY SYSTEM ⚠</p>
-                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">Stay in the light at night<br/>Darkness eats your mind<br/>When sanity breaks, so do you</p>
-                    <p style="margin: 60px 0; border-top: 2px solid #00ff00; padding-top: 30px; font-size: 20px;">
-                        <strong>HORROR MODS INCLUDED:</strong><br/>
-                        The Midnight • Lycanites Mobs • Infernal Mobs<br/>
-                        Rough Mobs 2 • Special Mobs • Doom Mod<br/>
-                        Create • Biomes O' Plenty • Mine Colonies
-                    </p>
-                    <p style="margin: 40px 0; font-size: 18px; color: #ffaa00;">
-                        Land Claiming • Friendship System<br/>
-                        Grief Protection • Admin Commands<br/>
-                        Custom Music & Ambiance
-                    </p>                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">
-                        Featured theme: Russian anthem-style horror soundtrack<br/>
-                        <em>official credits include the Russian anthem influence</em>
-                    </p>                    <p style="margin: 60px 0; font-size: 24px; color: #ff0000;">
-                        <strong>SURVIVE THE NIGHT</strong><br/>
-                        <strong>IF YOU CAN</strong>
-                    </p>
-                    <p style="margin: 80px 0; font-size: 14px; color: #666666;">
-                        Made for those who dare to explore darkness<br/>
-                        Project: Eglercraft Horror Server<br/>
-                        Built 2026
-                    </p>
-                </div>
-                <button id="closeCreditsBtn" style="margin-top: 50px; padding: 10px 30px; font-size: 18px; cursor: pointer; background: #ff0000; color: white; border: none; border-radius: 5px;">Close</button>
-            </div>
-        </div>
-    </div>
+  <div id="menu">
+    <div class="panel" id="menuPanel"></div>
+  </div>
 
-    <div id="inventoryScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center;">
-        <div class="menu-panel" style="width: 500px;">
-            <h1 style="text-align: center; margin-bottom: 20px;">Inventory</h1>
-            <p style="margin: 5px 0; color: #aaa;">Press I to close</p>
-            <div id="inventoryGrid" class="inventory-grid"></div>
-            <div id="inventoryInfo" style="margin-top: 20px; font-size: 12px; color: #aaa;"></div>
-            <button id="closeInventoryBtn" style="width: 100%; margin-top: 20px; padding: 10px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace;">Close (I)</button>
-        </div>
-    </div>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const uiStatus = document.getElementById('status');
+    const hotbar = document.getElementById('hotbar');
+    const overlay = document.getElementById('overlay');
+    const menu = document.getElementById('menu');
+    const menuPanel = document.getElementById('menuPanel');
 
-    <div id="craftingScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center;">
-        <div class="menu-panel" style="width: 600px;">
-            <h1 style="text-align: center; margin-bottom: 20px;">Crafting Table</h1>
-            <p style="margin: 5px 0; color: #aaa;">Press C to close | Click to craft</p>
-            <div id="craftingRecipes" style="margin: 20px 0;"></div>
-            <button id="closeCraftingBtn" style="width: 100%; margin-top: 20px; padding: 10px; background: #8B4513; color: white; border: 2px solid #654321; cursor: pointer; font-size: 14px; font-family: monospace;">Close (C)</button>
-        </div>
-    </div>
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-    <div id="hotbar"></div>
+    const player = {
+      x: 10,
+      y: 10,
+      yaw: 0,
+      pitch: 0,
+      speed: 0,
+      turn: 0,
+      sanity: 100,
+      health: 100,
+      torch: false,
+      dead: false,
+      inHouse: false,
+    };
 
-    <script>
-        // Minecraft-style Eglercraft horror client
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    const state = {
+      time: 8,
+      night: false,
+      stakerActive: false,
+      staker: { x: 16, y: 16, distance: 999, chase: false },
+      jumpScare: false,
+      ambientOn: false,
+      soundtrackStarted: false,
+      glowTimer: 0,
+      alert: 'Explore the haunted forest and survive the night.',
+      lastCraft: null,
+      factoryBuilt: false,
+    };
 
-        const blockSize = 32;
-        let player = { gridX: 10, gridY: 10, yaw: 0 }; // yaw = rotation/direction
-        let keys = {};
-        let moveCooldown = 0;
+    const world = [];
+    const objects = [];
+    const inventory = { wood: 5, stone: 2, stick: 0, torch: 1, planks: 0, crafting_table: 0, sword: 0, pickaxe: 0, factory: 0 };
+    let selectedSlot = 0;
 
-        // Inventory System
-        let inventory = {};
-        let selectedSlot = 0;
-        
-        const itemColors = {
-            'wood': '#CD853F',
-            'planks': '#8B4513',
-            'log': '#654321',
-            'stone': '#808080',
-            'dirt': '#8B7355',
-            'crafting_table': '#8B4513',
-            'pickaxe': '#696969',
-            'sword': '#C0C0C0',
-            'torch': '#FFD700'
-        };
+    const itemLabels = {
+      wood: 'Wood', stone: 'Stone', stick: 'Stick', torch: 'Torch', planks: 'Planks', crafting_table: 'Crafting Table', sword: 'Sword', pickaxe: 'Pickaxe', factory: 'Factory', apple: 'Apple'
+    };
 
-        const recipes = [
-            { name: 'Wooden Planks', requires: { wood: 1 }, produces: { planks: 4 } },
-            { name: 'Crafting Table', requires: { planks: 4 }, produces: { crafting_table: 1 } },
-            { name: 'Wooden Pickaxe', requires: { planks: 3, stick: 2 }, produces: { pickaxe: 1 } },
-            { name: 'Wooden Sword', requires: { planks: 2, stick: 1 }, produces: { sword: 1 } },
-            { name: 'Torches', requires: { coal: 1, stick: 1 }, produces: { torch: 4 } },
-            { name: 'Sticks', requires: { planks: 1 }, produces: { stick: 4 } },
-        ];
+    const recipes = [
+      { name: 'Wooden Planks', requires: { wood: 1 }, produces: { planks: 4 } },
+      { name: 'Stick', requires: { planks: 1 }, produces: { stick: 4 } },
+      { name: 'Crafting Table', requires: { planks: 4 }, produces: { crafting_table: 1 } },
+      { name: 'Wooden Pickaxe', requires: { planks: 3, stick: 2 }, produces: { pickaxe: 1 } },
+      { name: 'Wooden Sword', requires: { planks: 2, stick: 1 }, produces: { sword: 1 } },
+      { name: 'Torch', requires: { stick: 1, coal: 0 }, produces: { torch: 4 } },
+      { name: 'Factory', requires: { stone: 4, planks: 4 }, produces: { factory: 1 } }
+    ];
 
-        function addItem(item, amount = 1) {
-            if (!inventory[item]) inventory[item] = 0;
-            inventory[item] += amount;
+    function buildWorld() {
+      for (let x = 0; x < 20; x++) {
+        world[x] = [];
+        for (let y = 0; y < 20; y++) {
+          if ((x > 6 && x < 13 && y > 6 && y < 13)) {
+            world[x][y] = 'house';
+          } else if (Math.random() < 0.08) {
+            world[x][y] = 'tree';
+          } else if (Math.random() < 0.05) {
+            world[x][y] = 'rock';
+          } else {
+            world[x][y] = 'grass';
+          }
         }
+      }
+      world[10][10] = 'spawn';
+      world[8][8] = 'torch';
+      world[12][9] = 'torch';
+      objects.push({ type: 'factoryNode', x: 3, y: 16 });
+    }
 
-        function removeItem(item, amount = 1) {
-            if (inventory[item]) {
-                inventory[item] -= amount;
-                if (inventory[item] <= 0) delete inventory[item];
-            }
+    buildWorld();
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let ambientOsc, chaseOsc;
+
+    function startAmbient() {
+      if (state.soundtrackStarted) return;
+      state.soundtrackStarted = true;
+      ambientOsc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      ambientOsc.frequency.value = 60;
+      ambientOsc.type = 'sine';
+      gain.gain.value = 0.003;
+      ambientOsc.connect(gain).connect(audioContext.destination);
+      ambientOsc.start();
+
+      chaseOsc = audioContext.createOscillator();
+      const chaseGain = audioContext.createGain();
+      chaseOsc.frequency.value = 90;
+      chaseOsc.type = 'triangle';
+      chaseGain.gain.value = 0;
+      chaseOsc.connect(chaseGain).connect(audioContext.destination);
+      chaseOsc.start();
+      chaseOsc.gain = chaseGain;
+    }
+
+    function updateHotbar() {
+      hotbar.innerHTML = '';
+      const keys = Object.keys(inventory);
+      for (let i = 0; i < 9; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'hotbar-slot' + (selectedSlot === i ? ' selected' : '');
+        const item = keys[i] || '';
+        slot.innerHTML = item ? `${itemLabels[item] || item}<br/><small>${inventory[item] || 0}</small>` : '';
+        slot.onclick = () => selectedSlot = i;
+        hotbar.appendChild(slot);
+      }
+    }
+
+    function updateUI() {
+      updateHotbar();
+      updateStatus();
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    function updateStatus() {
+      uiStatus.innerHTML = `Time: ${state.time.toFixed(1)}:00 &nbsp;|&nbsp; ${state.night ? 'Night' : 'Day'}<br/>
+        Sanity: ${Math.round(player.sanity)}% &nbsp;|&nbsp; Health: ${Math.round(player.health)}%<br/>
+        ${state.alert}`;
+    }
+
+    function screenPoint(x, y) { return { x: x * canvas.width, y: y * canvas.height }; }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
+      if (state.night) { sky.addColorStop(0, '#02050C'); sky.addColorStop(1, '#12181F'); }
+      else { sky.addColorStop(0, '#7AA9E2'); sky.addColorStop(1, '#B6DCF5'); }
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
+
+      const ground = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
+      ground.addColorStop(0, '#1d3317');
+      ground.addColorStop(1, '#070b05');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, canvas.height * 0.4, canvas.width, canvas.height * 0.6);
+
+      const dir = { x: Math.sin(player.yaw), y: Math.cos(player.yaw) };
+      const plane = { x: -dir.y * 0.7, y: dir.x * 0.7 };
+      const baseX = canvas.width / 2;
+      const baseY = canvas.height * 0.45;
+
+      for (let depth = 6; depth >= 1; depth--) {
+        const scale = 1 - depth * 0.1;
+        for (let ix = -2; ix <= 2; ix++) {
+          const angle = player.yaw + ix * 0.25;
+          const tx = Math.round(player.x + Math.sin(angle) * depth);
+          const ty = Math.round(player.y + Math.cos(angle) * depth);
+          if (tx < 0 || tx >= 20 || ty < 0 || ty >= 20) continue;
+          const type = world[tx][ty];
+          const screenX = baseX + ix * 150 * scale;
+          const screenY = baseY - depth * 28;
+          drawObject(screenX, screenY, scale, type);
         }
+      }
 
-        function canCraft(recipe) {
-            for (let item in recipe.requires) {
-                if (!inventory[item] || inventory[item] < recipe.requires[item]) return false;
-            }
-            return true;
+      objects.forEach(obj => {
+        const dx = obj.x - player.x;
+        const dy = obj.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 10) {
+          const angle = Math.atan2(dx, dy) - player.yaw;
+          const screenX = baseX + Math.sin(angle) * 180;
+          drawObject(screenX, baseY - dist * 18, 0.6, obj.type);
         }
+      });
 
-        function craft(recipe) {
-            if (!canCraft(recipe)) return false;
-            for (let item in recipe.requires) {
-                removeItem(item, recipe.requires[item]);
-            }
-            for (let item in recipe.produces) {
-                addItem(item, recipe.produces[item]);
-            }
-            return true;
+      if (state.stakerActive && state.staker.distance < 12) {
+        const angle = Math.atan2(state.staker.x - player.x, state.staker.y - player.y) - player.yaw;
+        const screenX = baseX + Math.sin(angle) * 220;
+        drawObject(screenX, baseY - state.staker.distance * 18, 0.8, 'staker');
+      }
+
+      if (player.dead) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff4d4d';
+        ctx.font = 'bold 56px Arial';
+        ctx.fillText('YOU DIED', canvas.width / 2 - 140, canvas.height / 2);
+        ctx.font = '20px Arial';
+        ctx.fillText('Press R to restart', canvas.width / 2 - 100, canvas.height / 2 + 40);
+      }
+
+      if (state.jumpScare) {
+        ctx.fillStyle = 'rgba(255,0,0,0.85)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 68px Arial';
+        ctx.fillText('S T A L K E D', canvas.width / 2 - 250, canvas.height / 2);
+      }
+    }
+
+    function drawObject(x, y, scale, type) {
+      const size = 80 * scale;
+      if (type === 'tree') {
+        ctx.fillStyle = '#2e3d14';
+        ctx.fillRect(x - 8 * scale, y, 16 * scale, 70 * scale);
+        ctx.fillStyle = '#315519';
+        ctx.beginPath();
+        ctx.ellipse(x, y - 20 * scale, 40 * scale, 30 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'house') {
+        ctx.fillStyle = '#45301f';
+        ctx.fillRect(x - 40 * scale, y, 80 * scale, 80 * scale);
+        ctx.fillStyle = '#2b1f12';
+        ctx.beginPath();
+        ctx.moveTo(x - 45 * scale, y);
+        ctx.lineTo(x, y - 50 * scale);
+        ctx.lineTo(x + 45 * scale, y);
+        ctx.fill();
+      } else if (type === 'staker') {
+        ctx.fillStyle = '#330000';
+        ctx.beginPath();
+        ctx.arc(x, y + 10 * scale, 22 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff4d4d';
+        ctx.beginPath();
+        ctx.arc(x, y + 8 * scale, 10 * scale, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'rock') {
+        ctx.fillStyle = '#5d5d5d';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 10 * scale, 34 * scale, 24 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'torch') {
+        ctx.fillStyle = '#4f2c0e';
+        ctx.fillRect(x - 4 * scale, y, 8 * scale, 26 * scale);
+        ctx.fillStyle = '#ffcc33';
+        ctx.beginPath();
+        ctx.arc(x, y - 6 * scale, 10 * scale, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'factoryNode') {
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(x - 25 * scale, y, 50 * scale, 40 * scale);
+        ctx.fillStyle = '#7b7b7b';
+        ctx.fillRect(x - 20 * scale, y + 10 * scale, 40 * scale, 10 * scale);
+      } else {
+        ctx.fillStyle = '#31591d';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 24 * scale, 90 * scale, 40 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function movePlayer(dt) {
+      if (player.dead) return;
+      const walkSpeed = 2.5;
+      const dx = (keys['d'] ? 1 : 0) - (keys['a'] ? 1 : 0);
+      const dy = (keys['s'] ? 1 : 0) - (keys['w'] ? 1 : 0);
+      const forwardX = Math.sin(player.yaw);
+      const forwardY = Math.cos(player.yaw);
+      const rightX = Math.cos(player.yaw);
+      const rightY = -Math.sin(player.yaw);
+      const vx = (dy * forwardX + dx * rightX) * walkSpeed * dt;
+      const vy = (dy * forwardY + dx * rightY) * walkSpeed * dt;
+      player.x = clamp(player.x + vx, 1, 18);
+      player.y = clamp(player.y + vy, 1, 18);
+      player.yaw += (keys['q'] ? -0.02 : 0) + (keys['e'] ? 0.02 : 0);
+    }
+
+    function worldAt(x, y) {
+      const ix = Math.round(x);
+      const iy = Math.round(y);
+      if (ix < 0 || ix >= 20 || iy < 0 || iy >= 20) return 'void';
+      return world[ix][iy];
+    }
+
+    function updateGame(dt) {
+      if (player.dead) return;
+      state.time += dt * 0.02;
+      if (state.time >= 24) state.time -= 24;
+      state.night = state.time >= 18 || state.time < 6;
+
+      movePlayer(dt);
+      const terrain = worldAt(player.x, player.y);
+      player.inHouse = terrain === 'house';
+
+      const light = player.torch || terrain === 'torch' || player.inHouse;
+      if (state.night && !light) {
+        player.sanity = clamp(player.sanity - dt * 1.2, 0, 100);
+      } else {
+        player.sanity = clamp(player.sanity + dt * 0.6, 0, 100);
+      }
+
+      if (player.sanity <= 0) {
+        state.alert = 'You lost your mind. The Staker finishes you.';
+        player.dead = true;
+      }
+
+      const dx = state.staker.x - player.x;
+      const dy = state.staker.y - player.y;
+      state.staker.distance = Math.hypot(dx, dy);
+      if (!state.stakerActive && state.night) {
+        state.stakerActive = true;
+        state.alert = 'You feel something watching in the dark.';
+      }
+      if (state.stakerActive && !player.dead) {
+        const speed = 1.2 + (state.night ? 0.5 : 0);
+        if (state.staker.distance > 0.1) {
+          state.staker.x += (dx / state.staker.distance) * speed * dt;
+          state.staker.y += (dy / state.staker.distance) * speed * dt;
         }
+      }
 
-        function updateUI() {
-            const hotbarDiv = document.getElementById('hotbar');
-            hotbarDiv.innerHTML = '';
-            for (let i = 0; i < 9; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'hotbar-slot' + (i === selectedSlot ? ' selected' : '');
-                const itemKey = Object.keys(inventory)[i];
-                if (itemKey) {
-                    slot.innerHTML = `${itemKey}<br/>${inventory[itemKey]}`;
-                }
-                slot.onclick = () => selectedSlot = i;
-                hotbarDiv.appendChild(slot);
-            }
+      if (state.staker.distance < 6 && state.stakerActive) {
+        state.alert = 'The Staker is nearby! Run!';
+        state.jumpScare = Math.random() < 0.006;
+        chaseOsc.gain.gain.value = clamp((6 - state.staker.distance) * 0.02, 0, 0.08);
+      } else {
+        state.jumpScare = false;
+        chaseOsc.gain.gain.value = 0;
+      }
 
-            const gridDiv = document.getElementById('inventoryGrid');
-            gridDiv.innerHTML = '';
-            let slotIndex = 0;
-            for (let item in inventory) {
-                for (let i = 0; i < (inventory[item] || 0); i++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'inventory-slot filled';
-                    slot.style.backgroundColor = itemColors[item] || '#555';
-                    slot.innerHTML = item;
-                    slot.title = `${item} x${inventory[item]}`;
-                    gridDiv.appendChild(slot);
-                    slotIndex++;
-                    if (slotIndex >= 27) break;
-                }
-                if (slotIndex >= 27) break;
-            }
-            while (slotIndex < 27) {
-                const slot = document.createElement('div');
-                slot.className = 'inventory-slot';
-                gridDiv.appendChild(slot);
-                slotIndex++;
-            }
+      if (state.staker.distance < 1.5) {
+        player.dead = true;
+        state.alert = 'The Staker caught you!';
+      }
 
-            const craftingDiv = document.getElementById('craftingRecipes');
-            craftingDiv.innerHTML = '';
-            recipes.forEach((recipe, index) => {
-                const div = document.createElement('div');
-                const canMake = canCraft(recipe);
-                div.className = 'craft-recipe' + (canMake ? ' craftable' : '');
-                let requires = Object.entries(recipe.requires).map(([item, count]) => `${item}x${count}`).join(' + ');
-                let produces = Object.entries(recipe.produces).map(([item, count]) => `${item}x${count}`).join(', ');
-                div.innerHTML = `${recipe.name}<br/><span style="font-size: 10px; color: #888;">${requires} → ${produces}</span>`;
-                div.style.cursor = canMake ? 'pointer' : 'default';
-                div.style.opacity = canMake ? '1' : '0.5';
-                if (canMake) div.onclick = () => craft(recipe);
-                craftingDiv.appendChild(div);
-            });
-        }
+      if (terrain === 'torch') {
+        player.torch = true;
+      }
 
-        // Start with some items
-        addItem('wood', 3);
-        addItem('stone', 1);
-        updateUI();
+      if (player.inHouse && !player.dead) {
+        state.alert = 'You are inside the haunted house. The air is cold.';
+      }
 
-        // World grid (20x20)
-        let world = [];
-        for (let i = 0; i < 20; i++) {
-            world[i] = [];
-            for (let j = 0; j < 20; j++) {
-                const distance = Math.abs(i - 10) + Math.abs(j - 10);
-                if (distance < 6) {
-                    world[i][j] = 'grass';
-                } else if (distance < 10) {
-                    world[i][j] = 'dirt';
-                } else {
-                    world[i][j] = 'grass';
-                }
-            }
-        }
+      if (player.sanity < 30) {
+        overlay.style.background = 'rgba(64,0,0,0.24)';
+      } else {
+        overlay.style.background = 'transparent';
+      }
 
-        // Haunted forest and house
-        for (let i = 7; i < 13; i++) {
-            for (let j = 7; j < 13; j++) {
-                world[i][j] = 'planks';
-            }
-        }
+      updateStatus();
+      updateHotbar();
+    }
 
-        // Natural foliage
-        world[3][3] = 'log';
-        world[3][4] = 'leaves';
-        world[16][2] = 'log';
-        world[16][3] = 'leaves';
-        world[8][5] = 'leaves';
-        world[12][6] = 'log';
-        world[15][10] = 'leaves';
+    let lastTime = performance.now();
+    const keys = {};
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      updateGame(dt);
+      drawScene();
+      requestAnimationFrame(loop);
+    }
 
-        let isNight = false;
-        let sanity = 100;
-        let gameTime = 0;
-
-        function update() {
-            gameTime++;
-            const timeOfDay = (gameTime / 100) % 24;
-            isNight = timeOfDay > 12 && timeOfDay < 24;
-
-            // Movement with direction
-            if (moveCooldown <= 0) {
-                // Rotation
-                if (keys['arrowleft'] || keys['q']) { player.yaw -= 0.1; moveCooldown = 3; }
-                if (keys['arrowright'] || keys['e']) { player.yaw += 0.1; moveCooldown = 3; }
-                
-                // Forward/backward movement
-                if (keys['w']) { 
-                    player.gridY--;
-                    moveCooldown = 5;
-                }
-                if (keys['s']) { 
-                    player.gridY++;
-                    moveCooldown = 5;
-                }
-                
-                // Strafe
-                if (keys['a']) { 
-                    player.gridX--;
-                    moveCooldown = 5;
-                }
-                if (keys['d']) { 
-                    player.gridX++;
-                    moveCooldown = 5;
-                }
-                
-                // Boundary check
-                player.gridX = Math.max(0, Math.min(19, player.gridX));
-                player.gridY = Math.max(0, Math.min(19, player.gridY));
-            } else {
-                moveCooldown--;
-            }
-
-            // Sanity mechanics
-            if (isNight) {
-                sanity = Math.max(0, sanity - 0.2);
-            } else {
-                sanity = Math.min(100, sanity + 0.1);
-            }
-
-            // Collect resources from nearby blocks
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    const x = player.gridX + dx;
-                    const y = player.gridY + dy;
-                    if (x >= 0 && x < 20 && y >= 0 && y < 20) {
-                        const blockType = world[x][y];
-                        if (blockType === 'log' && Math.random() > 0.98) addItem('wood', 1);
-                        if (blockType === 'leaves' && Math.random() > 0.95) addItem('apple', 1);
-                        if (blockType === 'grass' && Math.random() > 0.99) addItem('seed', 1);
-                        if (blockType === 'stone' && Math.random() > 0.97) addItem('stone', 1);
-                    }
-                }
-            }
-
-            draw();
-            document.getElementById('sanity').textContent = Math.floor(sanity);
-            document.getElementById('time').textContent = isNight ? 'Night - Run!' : 'Day';
-
-            requestAnimationFrame(update);
-        }
-
-        function drawBlock(screenX, screenY, type, distance) {
-            // Smooth natural block representation using shapes and shading
-            let color;
-            switch (type) {
-                case 'grass': color = '#3A5F0B'; break;
-                case 'planks': color = '#6C4A2A'; break;
-                case 'log': color = '#5A3C25'; break;
-                case 'leaves': color = '#2C5F2D'; break;
-                case 'stone': color = '#5A5A5A'; break;
-                default: color = '#3A5F0B';
-            }
-
-            const size = 120 - distance * 14;
-            const base = 24 - distance * 3;
-            const height = size * 0.45;
-
-            const x = screenX;
-            const y = screenY + distance * 5;
-
-            // Terrain base
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.ellipse(x, y + height / 2, size / 2, height / 2, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Light shading layer
-            ctx.fillStyle = 'rgba(255,255,255,0.08)';
-            ctx.beginPath();
-            ctx.ellipse(x - size * 0.18, y + height / 2 - 8, size / 2.2, height / 2.4, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Dark shading layer
-            ctx.fillStyle = 'rgba(0,0,0,0.12)';
-            ctx.beginPath();
-            ctx.ellipse(x + size * 0.2, y + height / 2 + 8, size / 2.4, height / 2.8, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (type === 'leaves') {
-                ctx.fillStyle = '#30612E';
-                ctx.beginPath();
-                ctx.arc(x, y + height * 0.1, size * 0.17, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            if (type === 'log') {
-                ctx.strokeStyle = '#3F2A1B';
-                ctx.lineWidth = 6;
-                ctx.beginPath();
-                ctx.moveTo(x - size * 0.2, y + height * 0.05);
-                ctx.lineTo(x + size * 0.2, y + height * 0.25);
-                ctx.stroke();
-            }
-        }
-
-        function draw() {
-            // Sky gradient
-            const skyTop = isNight ? '#060A1A' : '#5C8BD4';
-            const skyBottom = isNight ? '#0C1227' : '#A6D8FF';
-            const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
-            sky.addColorStop(0, skyTop);
-            sky.addColorStop(1, skyBottom);
-            ctx.fillStyle = sky;
-            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
-
-            // Fog and distance haze
-            ctx.fillStyle = isNight ? 'rgba(0,0,30,0.35)' : 'rgba(180,220,255,0.18)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Ground plane
-            const ground = ctx.createLinearGradient(0, canvas.height * 0.35, 0, canvas.height);
-            ground.addColorStop(0, '#2A3E13');
-            ground.addColorStop(1, '#091403');
-            ctx.fillStyle = ground;
-            ctx.fillRect(0, canvas.height * 0.35, canvas.width, canvas.height * 0.65);
-
-            // Render the forest in the direction the player is looking
-            for (let depth = 6; depth >= 1; depth--) {
-                for (let side = -2; side <= 2; side++) {
-                    const angle = player.yaw + side * 0.35;
-                    const sampleX = Math.round(player.gridX + Math.sin(angle) * depth);
-                    const sampleY = Math.round(player.gridY + Math.cos(angle) * depth);
-
-                    if (sampleX >= 0 && sampleX < 20 && sampleY >= 0 && sampleY < 20) {
-                        const type = world[sampleX][sampleY];
-                        const layerOffset = (5 - depth) * 8;
-                        const screenX = canvas.width / 2 + side * 90 * (1 - depth * 0.08);
-                        const screenY = canvas.height * 0.5 - depth * 16 - Math.abs(side) * 4 + layerOffset;
-                        drawBlock(screenX, screenY, type, depth);
-                    }
-                }
-            }
-
-            // Add distant forest and fog detail behind the horizon
-            for (let i = 1; i <= 4; i++) {
-                const x = canvas.width * 0.2 + i * 130 + Math.sin(player.yaw + i) * 20;
-                const y = canvas.height * 0.56 - i * 10;
-                ctx.fillStyle = 'rgba(26, 42, 12, 0.7)';
-                ctx.beginPath();
-                ctx.ellipse(x, y, 28, 52, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(x + 18, y - 18, 44, 34, 0, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(33, 57, 26, 0.85)';
-                ctx.fill();
-            }
-
-            // Add house silhouette
-            ctx.fillStyle = 'rgba(40, 20, 10, 0.9)';
-            ctx.beginPath();
-            ctx.moveTo(canvas.width * 0.65, canvas.height * 0.5);
-            ctx.lineTo(canvas.width * 0.6, canvas.height * 0.65);
-            ctx.lineTo(canvas.width * 0.72, canvas.height * 0.65);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = 'rgba(80, 50, 30, 0.95)';
-            ctx.fillRect(canvas.width * 0.62, canvas.height * 0.55, canvas.width * 0.1, canvas.height * 0.08);
-
-            // Character weapon/hand foreground
-            ctx.fillStyle = '#3E2B1B';
-            ctx.beginPath();
-            ctx.moveTo(canvas.width * 0.5 - 18, canvas.height * 0.8);
-            ctx.lineTo(canvas.width * 0.5 + 48, canvas.height * 0.8);
-            ctx.lineTo(canvas.width * 0.5 + 12, canvas.height * 0.92);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = '#A08876';
-            ctx.fillRect(canvas.width * 0.47, canvas.height * 0.78, 12, 36);
-
-            // Night darkness overlay
-            if (isNight) {
-                const darkness = 0.55 + (100 - sanity) / 240;
-                ctx.fillStyle = `rgba(0, 0, 20, ${darkness})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                if (sanity < 50) {
-                    ctx.fillStyle = 'rgba(150, 0, 0, 0.18)';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = '#FF6666';
-                    ctx.font = 'bold 30px monospace';
-                    ctx.fillText('SANITY LOW!', canvas.width / 2 - 120, 50);
-                }
-
-                if (sanity < 20) {
-                    ctx.fillStyle = '#EEE';
-                    ctx.font = 'bold 48px monospace';
-                    ctx.fillText('THE STALKER IS NEAR', canvas.width / 2 - 220, canvas.height / 2);
-                }
-            }
-
-            // HUD crosshair
-            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2 - 15, canvas.height / 2);
-            ctx.lineTo(canvas.width / 2 + 15, canvas.height / 2);
-            ctx.moveTo(canvas.width / 2, canvas.height / 2 - 15);
-            ctx.lineTo(canvas.width / 2, canvas.height / 2 + 15);
-            ctx.stroke();
-        }
-
-        document.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-
-            if (e.key.toLowerCase() === 'i') {
-                const inventoryScreen = document.getElementById('inventoryScreen');
-                inventoryScreen.style.display = inventoryScreen.style.display === 'none' ? 'flex' : 'none';
-                updateUI();
-            }
-            if (e.key.toLowerCase() === 'c') {
-                const craftingScreen = document.getElementById('craftingScreen');
-                craftingScreen.style.display = craftingScreen.style.display === 'none' ? 'flex' : 'none';
-                updateUI();
-            }
+    function openMenu(type) {
+      menu.style.display = 'flex';
+      menuPanel.innerHTML = '';
+      if (type === 'inventory') {
+        const title = document.createElement('h2');
+        title.textContent = 'Inventory';
+        menuPanel.appendChild(title);
+        const grid = document.createElement('div');
+        grid.className = 'inventory-grid';
+        Object.entries(inventory).forEach(([item, count]) => {
+          const slot = document.createElement('div');
+          slot.className = 'slot';
+          slot.innerHTML = `<strong>${itemLabels[item] || item}</strong><br/>x${count}`;
+          grid.appendChild(slot);
         });
-        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
-
-        canvas.addEventListener('click', () => {
-            if (document.pointerLockElement !== canvas) {
-                canvas.requestPointerLock();
-            }
+        menuPanel.appendChild(grid);
+      }
+      if (type === 'crafting') {
+        const title = document.createElement('h2');
+        title.textContent = 'Crafting';
+        menuPanel.appendChild(title);
+        recipes.forEach(recipe => {
+          const recipeDiv = document.createElement('div');
+          const can = Object.entries(recipe.requires).every(([item, qty]) => inventory[item] >= qty);
+          recipeDiv.className = 'recipe' + (can ? ' craftable' : '');
+          recipeDiv.innerHTML = `<strong>${recipe.name}</strong><br/><small>${Object.entries(recipe.requires).map(([item, qty]) => `${itemLabels[item] || item} x${qty}`).join(' + ')}</small>`;
+          if (can) recipeDiv.onclick = () => {
+            Object.entries(recipe.requires).forEach(([item, qty]) => inventory[item] -= qty);
+            Object.entries(recipe.produces).forEach(([item, qty]) => inventory[item] = (inventory[item] || 0) + qty);
+            state.alert = `Crafted ${recipe.name}.`;
+            updateUI();
+            openMenu('crafting');
+          };
+          menuPanel.appendChild(recipeDiv);
         });
+      }
+      const closeButton = document.createElement('button');
+      closeButton.className = 'button';
+      closeButton.textContent = 'Close';
+      closeButton.onclick = () => { menu.style.display = 'none'; };
+      menuPanel.appendChild(closeButton);
+    }
 
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === canvas) {
-                canvas.style.cursor = 'none';
-            } else {
-                canvas.style.cursor = 'default';
-            }
-        });
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'i') openMenu('inventory');
+      if (e.key.toLowerCase() === 'c') openMenu('crafting');
+      if (e.key.toLowerCase() === 'r' && player.dead) location.reload();
+      if (e.key.toLowerCase() === 'p') player.torch = !player.torch;
+    });
+    document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement === canvas) {
-                player.yaw += e.movementX * 0.003;
-            }
-        });
+    canvas.addEventListener('click', () => {
+      if (document.pointerLockElement !== canvas) {
+        canvas.requestPointerLock();
+      }
+      startAmbient();
+    });
+    document.addEventListener('pointerlockchange', () => {
+      canvas.style.cursor = document.pointerLockElement === canvas ? 'none' : 'default';
+    });
+    document.addEventListener('mousemove', e => {
+      if (document.pointerLockElement === canvas && !player.dead) {
+        player.yaw += e.movementX * 0.0025;
+      }
+    });
+    document.addEventListener('mousedown', e => {
+      if (e.button === 2) player.torch = !player.torch;
+    });
 
-        // Credits functionality
-        const creditsBtn = document.getElementById('creditsBtn');
-        const creditsScreen = document.getElementById('creditsScreen');
-        const closeCreditsBtn = document.getElementById('closeCreditsBtn');
-        const closeInventoryBtn = document.getElementById('closeInventoryBtn');
-        const closeCraftingBtn = document.getElementById('closeCraftingBtn');
-        const inventoryScreen = document.getElementById('inventoryScreen');
-        const craftingScreen = document.getElementById('craftingScreen');
-
-        creditsBtn.addEventListener('click', () => {
-            creditsScreen.style.display = 'flex';
-            creditsScreen.style.alignItems = 'center';
-            creditsScreen.style.justifyContent = 'center';
-        });
-
-        closeCreditsBtn.addEventListener('click', () => {
-            creditsScreen.style.display = 'none';
-        });
-
-        closeInventoryBtn.addEventListener('click', () => {
-            inventoryScreen.style.display = 'none';
-        });
-
-        closeCraftingBtn.addEventListener('click', () => {
-            craftingScreen.style.display = 'none';
-        });
-
-        creditsScreen.addEventListener('click', (e) => {
-            if (e.target === creditsScreen) {
-                creditsScreen.style.display = 'none';
-            }
-        });
-
-        inventoryScreen.addEventListener('click', (e) => {
-            if (e.target === inventoryScreen) {
-                inventoryScreen.style.display = 'none';
-            }
-        });
-
-        craftingScreen.addEventListener('click', (e) => {
-            if (e.target === craftingScreen) {
-                craftingScreen.style.display = 'none';
-            }
-        });
-
-        update();
-    </script>
+    updateStatus();
+    updateHotbar();
+    requestAnimationFrame(loop);
+  </script>
 </body>
 </html>
