@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eglercraft Horror Server Web Client</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui">
+        <p>Eglercraft Horror Server</p>
+        <p>Controls: WASD to move, Mouse to look</p>
+        <p>Find light sources at night!</p>
+    </div>
+
+    <script>
+        // Basic Eglercraft-like client integration
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let player = { x: 0, y: 1, z: 0, yaw: 0, pitch: 0 };
+        let keys = {};
+        let mouse = { x: 0, y: 0 };
+
+        // Simulate night vision
+        let isNight = false;
+        let hasLight = false;
+
+        function update() {
+            // Movement
+            if (keys['w']) player.z -= 0.1;
+            if (keys['s']) player.z += 0.1;
+            if (keys['a']) player.x -= 0.1;
+            if (keys['d']) player.x += 0.1;
+
+            // Simulate time
+            const time = Date.now() % 24000;
+            isNight = time > 12000;
+
+            // Check for light sources (simulate)
+            hasLight = Math.random() > 0.9; // Placeholder
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.fillStyle = isNight && !hasLight ? '#000' : '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (isNight && !hasLight) {
+                ctx.fillStyle = 'rgba(0,0,0,0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '20px monospace';
+                ctx.fillText('It\'s too dark! Find a light source!', 100, 100);
+            } else {
+                // Draw simple world
+                ctx.fillStyle = 'green';
+                ctx.fillRect(0, canvas.height - 50, canvas.width, 50); // Ground
+                ctx.fillStyle = 'brown';
+                ctx.fillRect(200, 200, 50, 100); // Haunted house
+            }
+
+            // Player
+            ctx.fillStyle = 'red';
+            ctx.fillRect(canvas.width / 2 - 5, canvas.height / 2 - 5, 10, 10);
+        }
+
+        document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+        document.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        update();
+    </script>
+</body>
+</html>
