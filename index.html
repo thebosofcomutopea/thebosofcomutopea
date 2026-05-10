@@ -18,6 +18,46 @@
         <p>Controls: WASD to move</p>
         <p>Sanity: <span id="sanity">100</span>%</p>
         <p>Time: <span id="time">Day</span></p>
+        <button id="creditsBtn" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">Credits</button>
+    </div>
+
+    <div id="creditsScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #000033, #000066); color: white; font-family: monospace; overflow-y: auto; z-index: 1000;">
+        <div style="text-align: center; padding: 50px; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+            <div>
+                <h1 style="font-size: 48px; margin-bottom: 50px; text-shadow: 0 0 20px #00ff00;">EGLERCRAFT HORROR SERVER</h1>
+                <div style="font-size: 24px; margin: 30px 0; text-shadow: 0 0 10px #00ff00;">
+                    <p style="margin: 20px 0;">Made with horrors in mind</p>
+                    <p style="margin: 20px 0;">━━━━━━━━━━━━━━━━━━━━━━━━━━━</p>
+                    <p style="margin: 40px 0; font-size: 28px; color: #ff6666;">⚠ THE STAKER ⚠</p>
+                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">A creature that stalks pillar builders<br/>Breaks blocks to reach you<br/>Plays haunting sounds as it hunts</p>
+                    <p style="margin: 40px 0; font-size: 28px; color: #ffaa00;">⚠ DEATH ANGELS ⚠</p>
+                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">Don't blink or look away<br/>They move only when unseen<br/>Fast and deadly</p>
+                    <p style="margin: 40px 0; font-size: 28px; color: #00ffff;">⚠ SANITY SYSTEM ⚠</p>
+                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">Stay in the light at night<br/>Darkness eats your mind<br/>When sanity breaks, so do you</p>
+                    <p style="margin: 60px 0; border-top: 2px solid #00ff00; padding-top: 30px; font-size: 20px;">
+                        <strong>HORROR MODS INCLUDED:</strong><br/>
+                        The Midnight • Lycanites Mobs • Infernal Mobs<br/>
+                        Rough Mobs 2 • Special Mobs • Doom Mod<br/>
+                        Create • Biomes O' Plenty • Mine Colonies
+                    </p>
+                    <p style="margin: 40px 0; font-size: 18px; color: #ffaa00;">
+                        Land Claiming • Friendship System<br/>
+                        Grief Protection • Admin Commands<br/>
+                        Custom Music & Ambiance
+                    </p>
+                    <p style="margin: 60px 0; font-size: 24px; color: #ff0000;">
+                        <strong>SURVIVE THE NIGHT</strong><br/>
+                        <strong>IF YOU CAN</strong>
+                    </p>
+                    <p style="margin: 80px 0; font-size: 14px; color: #666666;">
+                        Made for those who dare to explore darkness<br/>
+                        Project: Eglercraft Horror Server<br/>
+                        Built 2026
+                    </p>
+                </div>
+                <button id="closeCreditsBtn" style="margin-top: 50px; padding: 10px 30px; font-size: 18px; cursor: pointer; background: #ff0000; color: white; border: none; border-radius: 5px;">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -88,50 +128,65 @@
         }
 
         function drawBlock(screenX, screenY, type) {
-            let color, shadeLight, shadeDark;
+            // 3D isometric block drawing
+            const size = blockSize;
+            let color, topColor, sideColor;
+            
             switch (type) {
                 case 'grass':
                     color = '#4CAF50';
-                    shadeLight = '#66BB6A';
-                    shadeDark = '#2E7D32';
+                    topColor = '#7CB342';
+                    sideColor = '#2E7D32';
                     break;
                 case 'planks':
                     color = '#8B4513';
-                    shadeLight = '#A0522D';
-                    shadeDark = '#654321';
+                    topColor = '#A0522D';
+                    sideColor = '#654321';
                     break;
                 case 'log':
                     color = '#654321';
-                    shadeLight = '#8B4513';
-                    shadeDark = '#4A2511';
+                    topColor = '#8B4513';
+                    sideColor = '#4A2511';
                     break;
                 case 'leaves':
                     color = '#228B22';
-                    shadeLight = '#32CD32';
-                    shadeDark = '#1a5c1a';
+                    topColor = '#32CD32';
+                    sideColor = '#1a5c1a';
                     break;
                 default:
                     color = '#4CAF50';
-                    shadeLight = '#66BB6A';
-                    shadeDark = '#2E7D32';
+                    topColor = '#7CB342';
+                    sideColor = '#2E7D32';
             }
 
-            // Main block
+            const halfSize = size / 2;
+
+            // Front face
             ctx.fillStyle = color;
-            ctx.fillRect(screenX, screenY, blockSize, blockSize);
-
-            // Top shading (lighter)
-            ctx.fillStyle = shadeLight;
-            ctx.fillRect(screenX, screenY, blockSize, 4);
-
-            // Bottom shading (darker)
-            ctx.fillStyle = shadeDark;
-            ctx.fillRect(screenX, screenY + blockSize - 4, blockSize, 4);
-
-            // Grid outline
+            ctx.fillRect(screenX, screenY, size, size);
             ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(screenX, screenY, blockSize, blockSize);
+            ctx.lineWidth = 1;
+            ctx.strokeRect(screenX, screenY, size, size);
+
+            // Top face (isometric)
+            ctx.fillStyle = topColor;
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY);
+            ctx.lineTo(screenX + halfSize, screenY - halfSize * 0.5);
+            ctx.lineTo(screenX + size + halfSize, screenY - halfSize * 0.5);
+            ctx.lineTo(screenX + size, screenY);
+            ctx.fill();
+            ctx.stroke();
+
+            // Right face (isometric)
+            ctx.fillStyle = sideColor;
+            ctx.beginPath();
+            ctx.moveTo(screenX + size, screenY);
+            ctx.lineTo(screenX + size + halfSize, screenY - halfSize * 0.5);
+            ctx.lineTo(screenX + size + halfSize, screenY + size - halfSize * 0.5);
+            ctx.lineTo(screenX + size, screenY + size);
+            ctx.fill();
+            ctx.stroke();
         }
 
         function draw() {
@@ -195,6 +250,27 @@
 
         document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
         document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        // Credits functionality
+        const creditsBtn = document.getElementById('creditsBtn');
+        const creditsScreen = document.getElementById('creditsScreen');
+        const closeCreditsBtn = document.getElementById('closeCreditsBtn');
+
+        creditsBtn.addEventListener('click', () => {
+            creditsScreen.style.display = 'flex';
+            creditsScreen.style.alignItems = 'center';
+            creditsScreen.style.justifyContent = 'center';
+        });
+
+        closeCreditsBtn.addEventListener('click', () => {
+            creditsScreen.style.display = 'none';
+        });
+
+        creditsScreen.addEventListener('click', (e) => {
+            if (e.target === creditsScreen) {
+                creditsScreen.style.display = 'none';
+            }
+        });
 
         update();
     </script>
