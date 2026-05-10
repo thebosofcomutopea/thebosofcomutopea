@@ -43,7 +43,19 @@ npm run setup
 npm run start
 ```
 
-## Integration details
+## Online Deployment (like 1b2t)
+
+To run this as a persistent online server accessible from anywhere:
+
+1. Go to [Railway.app](https://railway.app) and create a free account.
+2. Click "New Project" > "Deploy from GitHub repo".
+3. Connect your GitHub account and select the repository `thebosofcomutopea/thebosofcomutopea`.
+4. Railway will automatically detect the Dockerfile and deploy the server.
+5. Once deployed, you'll get a domain like `your-project-name.railway.app`.
+6. The Minecraft server will be running on port 25565, so connect using `your-project-name.railway.app:25565` in your Eglercraft client.
+7. The server will stay online as long as you have Railway's free credits (512MB RAM, 1GB disk).
+
+For more persistent hosting, consider upgrading to a paid Railway plan or using Render.com with similar Docker deployment.
 
 - The wrapper sets `HORROR_CONFIG` and `EGCRAFT_CONFIG` environment values for the Eglercraft server.
 - `eglercraft-server-config.json` contains world, plugin and soundscape references.
