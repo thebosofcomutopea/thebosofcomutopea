@@ -3,83 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eglercraft Horror Server Web Client</title>
+    <title>Eglercraft Horror Server</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: monospace; }
         canvas { display: block; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; background: rgba(0,0,0,0.7); padding: 10px; }
+        #ui p { margin: 5px 0; }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui">
         <p>Eglercraft Horror Server</p>
-        <p>Controls: WASD to move, Mouse to look</p>
-        <p>Find light sources at night!</p>
+        <p>Controls: WASD to move</p>
+        <p>Sanity: <span id="sanity">100</span>%</p>
+        <p>Time: <span id="time">Day</span></p>
     </div>
 
     <script>
-        // Basic Eglercraft-like client integration
+        // Minecraft-style Eglercraft horror client
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let player = { x: 0, y: 1, z: 0, yaw: 0, pitch: 0 };
+        const blockSize = 32;
+        let player = { gridX: 10, gridY: 10 };
         let keys = {};
-        let mouse = { x: 0, y: 0 };
+        let moveCooldown = 0;
 
-        // Simulate night vision
+        // World grid (20x20)
+        let world = [];
+        for (let i = 0; i < 20; i++) {
+            world[i] = [];
+            for (let j = 0; j < 20; j++) {
+                world[i][j] = 'grass';
+            }
+        }
+
+        // Haunted house (unbreakable)
+        for (let i = 7; i < 13; i++) {
+            for (let j = 7; j < 13; j++) {
+                world[i][j] = 'planks';
+            }
+        }
+
+        // Trees
+        world[3][3] = 'log';
+        world[3][4] = 'leaves';
+        world[16][2] = 'log';
+        world[16][3] = 'leaves';
+
         let isNight = false;
-        let hasLight = false;
+        let sanity = 100;
+        let gameTime = 0;
 
         function update() {
+            gameTime++;
+            const timeOfDay = (gameTime / 100) % 24;
+            isNight = timeOfDay > 12 && timeOfDay < 24;
+
             // Movement
-            if (keys['w']) player.z -= 0.1;
-            if (keys['s']) player.z += 0.1;
-            if (keys['a']) player.x -= 0.1;
-            if (keys['d']) player.x += 0.1;
+            if (moveCooldown <= 0) {
+                if (keys['w'] && player.gridY > 0) { player.gridY--; moveCooldown = 5; }
+                if (keys['s'] && player.gridY < 19) { player.gridY++; moveCooldown = 5; }
+                if (keys['a'] && player.gridX > 0) { player.gridX--; moveCooldown = 5; }
+                if (keys['d'] && player.gridX < 19) { player.gridX++; moveCooldown = 5; }
+            } else {
+                moveCooldown--;
+            }
 
-            // Simulate time
-            const time = Date.now() % 24000;
-            isNight = time > 12000;
-
-            // Check for light sources (simulate)
-            hasLight = Math.random() > 0.9; // Placeholder
+            // Sanity mechanics
+            if (isNight) {
+                sanity = Math.max(0, sanity - 0.2);
+            } else {
+                sanity = Math.min(100, sanity + 0.1);
+            }
 
             draw();
+            document.getElementById('sanity').textContent = Math.floor(sanity);
+            document.getElementById('time').textContent = isNight ? 'Night - Run!' : 'Day';
+
             requestAnimationFrame(update);
         }
 
-        function draw() {
-            ctx.fillStyle = isNight && !hasLight ? '#000' : '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (isNight && !hasLight) {
-                ctx.fillStyle = 'rgba(0,0,0,0.95)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'white';
-                ctx.font = '20px monospace';
-                ctx.fillText('It\'s too dark! Find a light source!', 100, 100);
-            } else {
-                // Draw simple world
-                ctx.fillStyle = 'green';
-                ctx.fillRect(0, canvas.height - 50, canvas.width, 50); // Ground
-                ctx.fillStyle = 'brown';
-                ctx.fillRect(200, 200, 50, 100); // Haunted house
+        function drawBlock(screenX, screenY, type) {
+            let color, shadeLight, shadeDark;
+            switch (type) {
+                case 'grass':
+                    color = '#4CAF50';
+                    shadeLight = '#66BB6A';
+                    shadeDark = '#2E7D32';
+                    break;
+                case 'planks':
+                    color = '#8B4513';
+                    shadeLight = '#A0522D';
+                    shadeDark = '#654321';
+                    break;
+                case 'log':
+                    color = '#654321';
+                    shadeLight = '#8B4513';
+                    shadeDark = '#4A2511';
+                    break;
+                case 'leaves':
+                    color = '#228B22';
+                    shadeLight = '#32CD32';
+                    shadeDark = '#1a5c1a';
+                    break;
+                default:
+                    color = '#4CAF50';
+                    shadeLight = '#66BB6A';
+                    shadeDark = '#2E7D32';
             }
 
-            // Player
-            ctx.fillStyle = 'red';
-            ctx.fillRect(canvas.width / 2 - 5, canvas.height / 2 - 5, 10, 10);
+            // Main block
+            ctx.fillStyle = color;
+            ctx.fillRect(screenX, screenY, blockSize, blockSize);
+
+            // Top shading (lighter)
+            ctx.fillStyle = shadeLight;
+            ctx.fillRect(screenX, screenY, blockSize, 4);
+
+            // Bottom shading (darker)
+            ctx.fillStyle = shadeDark;
+            ctx.fillRect(screenX, screenY + blockSize - 4, blockSize, 4);
+
+            // Grid outline
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(screenX, screenY, blockSize, blockSize);
+        }
+
+        function draw() {
+            // Sky
+            ctx.fillStyle = isNight ? '#000033' : '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render world around player
+            const viewDistance = 12;
+            const startX = Math.max(0, player.gridX - viewDistance);
+            const endX = Math.min(20, player.gridX + viewDistance);
+            const startY = Math.max(0, player.gridY - viewDistance);
+            const endY = Math.min(20, player.gridY + viewDistance);
+
+            for (let i = startX; i < endX; i++) {
+                for (let j = startY; j < endY; j++) {
+                    const screenX = i * blockSize - player.gridX * blockSize + canvas.width / 2;
+                    const screenY = j * blockSize - player.gridY * blockSize + canvas.height / 2;
+                    drawBlock(screenX, screenY, world[i][j]);
+                }
+            }
+
+            // Player (red block in center)
+            ctx.fillStyle = '#FF5722';
+            ctx.fillRect(canvas.width / 2 - blockSize/2, canvas.height / 2 - blockSize/2, blockSize, blockSize);
+            ctx.fillStyle = '#FFC107';
+            ctx.fillRect(canvas.width / 2 - blockSize/2, canvas.height / 2 - blockSize - 4, blockSize, blockSize);
+
+            // Night darkness
+            if (isNight) {
+                const darkness = 0.7 + (100 - sanity) / 200;
+                ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (sanity < 50) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#FF0000';
+                    ctx.font = 'bold 30px monospace';
+                    ctx.fillText('SANITY LOW!', canvas.width / 2 - 100, 50);
+                }
+
+                if (sanity < 20) {
+                    // Staker appearing
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 40px monospace';
+                    ctx.fillText('IT\'S COMING...', 50, canvas.height / 2);
+                }
+            }
+
+            // Crosshair
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 10, canvas.height / 2);
+            ctx.lineTo(canvas.width / 2 + 10, canvas.height / 2);
+            ctx.moveTo(canvas.width / 2, canvas.height / 2 - 10);
+            ctx.lineTo(canvas.width / 2, canvas.height / 2 + 10);
+            ctx.stroke();
         }
 
         document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
         document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
-        document.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
 
         update();
     </script>
