@@ -31,7 +31,7 @@
     <canvas id="gameCanvas"></canvas>
     <div id="ui">
         <p>Eglercraft Horror Server</p>
-        <p>Controls: WASD to move | Q/E to look</p>
+        <p>Controls: WASD to move | Click to look around</p>
         <p>I = Inventory | C = Crafting</p>
         <p>Sanity: <span id="sanity">100</span>%</p>
         <p>Time: <span id="time">Day</span></p>
@@ -61,8 +61,10 @@
                         Land Claiming • Friendship System<br/>
                         Grief Protection • Admin Commands<br/>
                         Custom Music & Ambiance
-                    </p>
-                    <p style="margin: 60px 0; font-size: 24px; color: #ff0000;">
+                    </p>                    <p style="margin: 20px 0; font-size: 18px; color: #cccccc;">
+                        Featured theme: Russian anthem-style horror soundtrack<br/>
+                        <em>official credits include the Russian anthem influence</em>
+                    </p>                    <p style="margin: 60px 0; font-size: 24px; color: #ff0000;">
                         <strong>SURVIVE THE NIGHT</strong><br/>
                         <strong>IF YOU CAN</strong>
                     </p>
@@ -401,31 +403,34 @@
             ctx.fillStyle = ground;
             ctx.fillRect(0, canvas.height * 0.35, canvas.width, canvas.height * 0.65);
 
-            // Draw trees and foliage layers
+            // Render the forest in the direction the player is looking
             for (let depth = 6; depth >= 1; depth--) {
-                const row = player.gridY + depth;
-                const xOffset = (canvas.width / 2) + (depth - 3) * 45;
-                const yOffset = canvas.height * 0.45 + depth * 12;
-                const type = world[player.gridX][row] || 'grass';
-                drawBlock(xOffset, yOffset, type, depth);
+                for (let side = -2; side <= 2; side++) {
+                    const angle = player.yaw + side * 0.35;
+                    const sampleX = Math.round(player.gridX + Math.sin(angle) * depth);
+                    const sampleY = Math.round(player.gridY + Math.cos(angle) * depth);
 
-                for (let side = -1; side <= 1; side += 2) {
-                    const sideType = world[player.gridX + side] ? world[player.gridX + side][row] : 'grass';
-                    drawBlock(xOffset + side * 80, yOffset - 10, sideType, depth + 0.5);
+                    if (sampleX >= 0 && sampleX < 20 && sampleY >= 0 && sampleY < 20) {
+                        const type = world[sampleX][sampleY];
+                        const layerOffset = (5 - depth) * 8;
+                        const screenX = canvas.width / 2 + side * 90 * (1 - depth * 0.08);
+                        const screenY = canvas.height * 0.5 - depth * 16 - Math.abs(side) * 4 + layerOffset;
+                        drawBlock(screenX, screenY, type, depth);
+                    }
                 }
             }
 
-            // Add distant trees and detail
+            // Add distant forest and fog detail behind the horizon
             for (let i = 1; i <= 4; i++) {
-                const x = canvas.width * 0.18 + i * 140;
-                const y = canvas.height * 0.55 - i * 8;
-                ctx.fillStyle = '#1E2D10';
+                const x = canvas.width * 0.2 + i * 130 + Math.sin(player.yaw + i) * 20;
+                const y = canvas.height * 0.56 - i * 10;
+                ctx.fillStyle = 'rgba(26, 42, 12, 0.7)';
                 ctx.beginPath();
-                ctx.ellipse(x, y, 32, 60, 0, 0, Math.PI * 2);
+                ctx.ellipse(x, y, 28, 52, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.beginPath();
-                ctx.ellipse(x + 16, y - 20, 50, 40, 0, 0, Math.PI * 2);
-                ctx.fillStyle = '#29431F';
+                ctx.ellipse(x + 18, y - 18, 44, 34, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(33, 57, 26, 0.85)';
                 ctx.fill();
             }
 
@@ -485,7 +490,7 @@
 
         document.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
-            
+
             if (e.key.toLowerCase() === 'i') {
                 const inventoryScreen = document.getElementById('inventoryScreen');
                 inventoryScreen.style.display = inventoryScreen.style.display === 'none' ? 'flex' : 'none';
@@ -498,6 +503,26 @@
             }
         });
         document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        canvas.addEventListener('click', () => {
+            if (document.pointerLockElement !== canvas) {
+                canvas.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === canvas) {
+                canvas.style.cursor = 'none';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === canvas) {
+                player.yaw += e.movementX * 0.003;
+            }
+        });
 
         // Credits functionality
         const creditsBtn = document.getElementById('creditsBtn');
