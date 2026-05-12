@@ -142,7 +142,7 @@
       const gain = audioContext.createGain();
       ambientOsc.frequency.value = 55;
       ambientOsc.type = 'sine';
-      gain.gain.value = 0.02;
+      gain.gain.value = 0.3;
       ambientOsc.connect(gain).connect(audioContext.destination);
       ambientOsc.start();
 
@@ -187,14 +187,14 @@
     function drawScene() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
-      if (state.night) { sky.addColorStop(0, '#02050C'); sky.addColorStop(1, '#12181F'); }
-      else { sky.addColorStop(0, '#7AA9E2'); sky.addColorStop(1, '#B6DCF5'); }
+      if (state.night) { sky.addColorStop(0, '#1a1a2e'); sky.addColorStop(1, '#3d3d5c'); }
+      else { sky.addColorStop(0, '#87CEEB'); sky.addColorStop(1, '#E0F6FF'); }
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
 
       const ground = ctx.createLinearGradient(0, canvas.height * 0.35, 0, canvas.height);
-      ground.addColorStop(0, '#2a4a1b');
-      ground.addColorStop(1, '#14320a');
+      ground.addColorStop(0, '#4a7c3b');
+      ground.addColorStop(1, '#2d5f1f');
       ctx.fillStyle = ground;
       ctx.fillRect(0, canvas.height * 0.35, canvas.width, canvas.height * 0.65);
 
@@ -256,39 +256,39 @@
     function drawObject(x, y, scale, type) {
       const size = 80 * scale;
       if (type === 'tree') {
-        ctx.fillStyle = '#2e3d14';
+        ctx.fillStyle = '#5d4e37';
         ctx.fillRect(x - 8 * scale, y, 16 * scale, 70 * scale);
-        ctx.fillStyle = '#315519';
+        ctx.fillStyle = '#228B22';
         ctx.beginPath();
         ctx.ellipse(x, y - 20 * scale, 40 * scale, 30 * scale, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (type === 'house') {
-        ctx.fillStyle = '#45301f';
+        ctx.fillStyle = '#8B4513';
         ctx.fillRect(x - 40 * scale, y, 80 * scale, 80 * scale);
-        ctx.fillStyle = '#2b1f12';
+        ctx.fillStyle = '#654321';
         ctx.beginPath();
         ctx.moveTo(x - 45 * scale, y);
         ctx.lineTo(x, y - 50 * scale);
         ctx.lineTo(x + 45 * scale, y);
         ctx.fill();
       } else if (type === 'staker') {
-        ctx.fillStyle = '#330000';
+        ctx.fillStyle = '#1a0000';
         ctx.beginPath();
         ctx.arc(x, y + 10 * scale, 22 * scale, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ff4d4d';
+        ctx.fillStyle = '#FF0000';
         ctx.beginPath();
         ctx.arc(x, y + 8 * scale, 10 * scale, 0, Math.PI * 2);
         ctx.fill();
       } else if (type === 'rock') {
-        ctx.fillStyle = '#5d5d5d';
+        ctx.fillStyle = '#808080';
         ctx.beginPath();
         ctx.ellipse(x, y + 10 * scale, 34 * scale, 24 * scale, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (type === 'torch') {
-        ctx.fillStyle = '#4f2c0e';
+        ctx.fillStyle = '#8B4513';
         ctx.fillRect(x - 4 * scale, y, 8 * scale, 26 * scale);
-        ctx.fillStyle = '#ffcc33';
+        ctx.fillStyle = '#FFD700';
         ctx.beginPath();
         ctx.arc(x, y - 6 * scale, 10 * scale, 0, Math.PI * 2);
         ctx.fill();
@@ -298,7 +298,7 @@
         ctx.fillStyle = '#7b7b7b';
         ctx.fillRect(x - 20 * scale, y + 10 * scale, 40 * scale, 10 * scale);
       } else {
-        ctx.fillStyle = '#31591d';
+        ctx.fillStyle = '#3cb371';
         ctx.beginPath();
         ctx.ellipse(x, y + 24 * scale, 90 * scale, 40 * scale, 0, 0, Math.PI * 2);
         ctx.fill();
